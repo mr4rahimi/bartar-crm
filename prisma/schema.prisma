@@ -186,6 +186,7 @@ model RepairTicket {
   customerId   String
   deviceId     String
   status       RepairTicketStatus @default(OPEN)
+  issueDescription String?
   createdById  String
 
   customer     Customer      @relation(fields: [customerId], references: [id])
