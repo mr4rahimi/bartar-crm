@@ -2,30 +2,43 @@ import type { Config } from 'tailwindcss';
 
 const config: Config = {
   darkMode: 'class',
-  content: [
-    './app/**/*.{ts,tsx}',
-    './features/**/*.{ts,tsx}',
-    './shared/**/*.{ts,tsx}',
-  ],
+  content: ['./app/**/*.{ts,tsx}', './features/**/*.{ts,tsx}', './shared/**/*.{ts,tsx}'],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['var(--font-vazirmatn)', 'Tahoma', 'sans-serif'],
+      },
       colors: {
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
-        'muted-foreground': 'hsl(var(--muted-foreground))',
-        // Status colors — per 09-ui-guidelines.md
-        status: {
-          created: '#6b7280', // Gray
-          waiting: '#f97316', // Orange
-          approved: '#3b82f6', // Blue
-          purchasing: '#a855f7', // Purple
-          purchased: '#22c55e', // Green
-          returned: '#ef4444', // Red
-          closed: '#374151', // Dark Gray
+        card: {
+          DEFAULT: 'hsl(var(--card))',
+          foreground: 'hsl(var(--card-foreground))',
         },
+        muted: {
+          DEFAULT: 'hsl(var(--muted))',
+          foreground: 'hsl(var(--muted-foreground))',
+        },
+        primary: {
+          DEFAULT: 'hsl(var(--primary))',
+          foreground: 'hsl(var(--primary-foreground))',
+        },
+        accent: {
+          DEFAULT: 'hsl(var(--accent))',
+          foreground: 'hsl(var(--accent-foreground))',
+        },
+        destructive: {
+          DEFAULT: 'hsl(var(--destructive))',
+          foreground: 'hsl(var(--destructive-foreground))',
+        },
+        border: 'hsl(var(--border))',
+        input: 'hsl(var(--input))',
+        ring: 'hsl(var(--ring))',
       },
       borderRadius: {
-        lg: '0.75rem',
+        lg: 'var(--radius)',
+        md: 'calc(var(--radius) - 2px)',
+        sm: 'calc(var(--radius) - 4px)',
       },
     },
   },

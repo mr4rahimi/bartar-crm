@@ -1,0 +1,22 @@
+import {
+  LayoutDashboard,
+  Users,
+  ShieldCheck,
+  type LucideIcon,
+} from 'lucide-react';
+
+export type NavItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  /** کد Permission — مرجع: features/permissions/constants/permission-codes.constants.ts */
+  permission?: string;
+};
+
+// آیتم‌های ناوبری بر اساس Permission کاربر فیلتر می‌شوند (docs/14-ui-design-brief.md)
+// با اضافه شدن هر فیچر (درخواست قطعه، صف خرید، ...) آیتم آن اینجا اضافه می‌شود.
+export const NAV_ITEMS: NavItem[] = [
+  { href: '/dashboard', label: 'داشبورد', icon: LayoutDashboard },
+  { href: '/users', label: 'کاربران', icon: Users, permission: 'VIEW_USER' },
+  { href: '/roles', label: 'نقش‌ها', icon: ShieldCheck, permission: 'ASSIGN_ROLE' },
+];

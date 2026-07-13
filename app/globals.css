@@ -2,19 +2,48 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: 0 0% 100%;
-  --foreground: 222 47% 11%;
-  --muted-foreground: 215 16% 47%;
-}
+/* رنگ‌ها از ماکاپ ui/Bartar CRM.dc.html استخراج شده‌اند
+   light: appBg #f4f5f7 / surface #fff / border #e5e6ea / accent #22c55e
+   dark:  appBg #0b0f14 / surface #151a21 / border #232a33 */
+@layer base {
+  :root {
+    --background: 220 16% 96%;
+    --foreground: 240 6% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 6% 10%;
+    --muted: 228 11% 94%;
+    --muted-foreground: 240 4% 46%;
+    --primary: 142 71% 45%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 141 59% 94%;
+    --accent-foreground: 142 72% 29%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 228 11% 91%;
+    --input: 228 11% 91%;
+    --ring: 142 71% 45%;
+    --radius: 0.75rem;
+  }
 
-.dark {
-  --background: 222 47% 11%;
-  --foreground: 210 40% 98%;
-  --muted-foreground: 215 20% 65%;
-}
+  .dark {
+    --background: 213 29% 6%;
+    --foreground: 220 16% 96%;
+    --card: 215 22% 11%;
+    --card-foreground: 220 16% 96%;
+    --muted: 214 19% 14%;
+    --muted-foreground: 214 10% 58%;
+    --primary: 142 71% 45%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 147 48% 14%;
+    --accent-foreground: 142 69% 58%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 19% 17%;
+    --input: 214 19% 17%;
+    --ring: 142 71% 45%;
+  }
 
-body {
-  background-color: hsl(var(--background));
-  color: hsl(var(--foreground));
+  body {
+    @apply bg-background text-foreground;
+  }
 }
