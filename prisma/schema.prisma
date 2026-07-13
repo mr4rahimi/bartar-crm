@@ -246,9 +246,13 @@ enum PartRequestStatus {
 
 model PartRequest {
   id             String            @id @default(cuid())
-  repairTicketId String
+  repairTicketId String?
+  receptionNumber String
+  receptionNumber String
   partId         String
   quality        PartQuality
+  quantity       Int               @default(1)
+  quantity       Int               @default(1)
   brand          String?
   model          String?
   status         PartRequestStatus @default(CREATED)
@@ -263,7 +267,7 @@ model PartRequest {
 
   createdById String
 
-  repairTicket RepairTicket @relation(fields: [repairTicketId], references: [id])
+  repairTicket RepairTicket? @relation(fields: [repairTicketId], references: [id])
   part         Part         @relation(fields: [partId], references: [id])
   createdBy    User         @relation("PartRequestCreatedBy", fields: [createdById], references: [id])
 
