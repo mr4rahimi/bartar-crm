@@ -1,8 +1,9 @@
 import { z } from 'zod';
+import { phoneSchema } from '@/shared/validators/phone.schema';
 
 export const createUserSchema = z.object({
   name: z.string().trim().min(2, 'نام باید حداقل ۲ کاراکتر باشد'),
-  phone: z.string().regex(/^09\d{9}$/, 'شماره موبایل معتبر نیست (مثال: 09123456789)'),
+  phone: phoneSchema,
   email: z.string().email('ایمیل معتبر نیست').optional(),
   password: z.string().min(6, 'رمز عبور باید حداقل ۶ کاراکتر باشد'),
   isActive: z.boolean().default(true),

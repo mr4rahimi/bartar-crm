@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { phoneSchema } from '@/shared/validators/phone.schema';
 
 // مشتری: یا انتخاب موجود (customerId) یا ساخت سریع (newCustomer) — دقیقاً یکی
 export const createTicketSchema = z
@@ -7,7 +8,7 @@ export const createTicketSchema = z
     newCustomer: z
       .object({
         name: z.string().trim().min(2, 'نام مشتری باید حداقل ۲ کاراکتر باشد'),
-        phone: z.string().regex(/^09\d{9}$/, 'شماره موبایل مشتری معتبر نیست'),
+        phone: phoneSchema,
       })
       .optional(),
     brandName: z.string().trim().min(1, 'برند را وارد کنید'),

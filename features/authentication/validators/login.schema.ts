@@ -1,7 +1,11 @@
 import { z } from 'zod';
+import { normalizeDigits } from '@/shared/lib/normalize';
 
 export const loginSchema = z.object({
-  phone: z.string().min(10, 'شماره موبایل معتبر نیست'),
+  phone: z
+    .string()
+    .transform((value) => normalizeDigits(value.trim()))
+    .pipe(z.string().min(10, 'شماره موبایل معتبر نیست')),
   password: z.string().min(6, 'رمز عبور باید حداقل ۶ کاراکتر باشد'),
 });
 

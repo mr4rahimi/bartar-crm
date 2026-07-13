@@ -12,7 +12,8 @@ export async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
   const json = (await response.json()) as ApiEnvelope<T>;
 
   if (!json.success) {
-    throw new Error(json.message);
+    const details = json.errors?.map((error) => error.message).join(' — ');
+    throw new Error(details ? `${json.message}: ${details}` : json.message);
   }
 
   return json.data;
