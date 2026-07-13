@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { getCurrentUser } from '@/features/authentication/utils/current-user.utils';
 import { LogoutButton } from '@/features/authentication/components/logout-button';
 import { QueryProvider } from '@/shared/components/providers/query-provider';
+import { ToastProvider } from '@/shared/components/providers/toast-provider';
 import { AppShell } from '@/shared/components/layout/app-shell';
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
@@ -14,13 +15,15 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <QueryProvider>
-      <AppShell
-        userName={user.name}
-        permissions={user.permissions}
-        logoutSlot={<LogoutButton />}
-      >
-        {children}
-      </AppShell>
+      <ToastProvider>
+        <AppShell
+          userName={user.name}
+          permissions={user.permissions}
+          logoutSlot={<LogoutButton />}
+        >
+          {children}
+        </AppShell>
+      </ToastProvider>
     </QueryProvider>
   );
 }
