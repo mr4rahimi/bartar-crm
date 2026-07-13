@@ -1,5 +1,5 @@
 // =============================================================
-// Repair ERP — Prisma Schema
+// Bartar CRM — Prisma Schema
 // Phase 1 Scope: Authentication, Users/Roles/Permissions,
 // Repair Ticket, Part Request, Purchasing, Pricing, Vendors, Logs
 // Reference docs: 03-business-rules.md, 04-domain-model.md, 05-workflows.md

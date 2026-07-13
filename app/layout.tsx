@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Repair ERP',
+  title: 'Bartar CRM',
   description: 'سیستم مدیریت تعمیرات، خرید قطعات و خدمات پس از فروش',
 };
 
