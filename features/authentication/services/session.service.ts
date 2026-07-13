@@ -4,6 +4,7 @@ import {
   deleteSessionByTokenHash,
 } from '../repositories/session.repository';
 import { findUserById } from '../repositories/user.repository';
+import { createActivityLog } from '../repositories/activity-log.repository';
 import { hashToken } from '../utils/token.utils';
 import { SESSION_DURATION_DAYS, SESSION_RENEW_THRESHOLD_DAYS } from '../constants/session.constants';
 import type { AuthenticatedUser } from '../types/session.types';
@@ -59,7 +60,26 @@ export async function validateSession(rawToken: string): Promise<ValidateSession
   };
 }
 
-export async function logoutService(rawToken: string) {
+type LogoutContext = {
+  userAgent?: string | null;
+  ip?: string | null;
+};
+
+export async function logoutService(rawToken: string, context: LogoutContext = {}) {
   const tokenHash = hashToken(rawToken);
+  const session = await findSessionByTokenHash(tokenHash);
+
+  if (!session) return;
+
   await deleteSessionByTokenHash(tokenHash);
+
+  // طبق docs/10-development-rules.md — Logout باید Log شود
+  await createActivityLog({
+    userId: session.userId,
+    action: 'LOGOUT',
+    entityType: 'User',
+    entityId: session.userId,
+    ip: context.ip ?? null,
+    device: context.userAgent ?? null,
+  });
 }

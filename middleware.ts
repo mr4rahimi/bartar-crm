@@ -1,10 +1,19 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { SESSION_COOKIE_NAME } from '@/features/authentication/constants/session.constants';
 
-// این فایل در Feature بعدی (Authentication) تکمیل خواهد شد.
-// طبق 11-AI_INSTRUCTIONS.md: Route فقط Validate → Authorize → Call Service → Return Response
-
+// نکته: Middleware روی Edge Runtime اجرا می‌شود و Prisma در دسترس نیست.
+// اینجا فقط «وجود» کوکی چک می‌شود؛ اعتبارسنجی واقعی Session در
+// getCurrentUser و Route Handlerها (Server Runtime) انجام می‌شود.
 export function middleware(request: NextRequest) {
+  const hasSessionCookie = request.cookies.has(SESSION_COOKIE_NAME);
+
+  if (!hasSessionCookie) {
+    const loginUrl = new URL('/auth/login', request.url);
+    loginUrl.searchParams.set('redirect', request.nextUrl.pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
   return NextResponse.next();
 }
 

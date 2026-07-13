@@ -1,5 +1,6 @@
 import { findUserByPhone } from '../repositories/user.repository';
 import { createSession } from '../repositories/session.repository';
+import { createActivityLog } from '../repositories/activity-log.repository';
 import { verifyPassword } from '../utils/password.utils';
 import { generateSessionToken, hashToken } from '../utils/token.utils';
 import { SESSION_DURATION_DAYS } from '../constants/session.constants';
@@ -51,6 +52,16 @@ export async function loginService(input: LoginInput, context: LoginContext = {}
     expiresAt,
     userAgent: context.userAgent ?? null,
     ip: context.ip ?? null,
+  });
+
+  // طبق docs/10-development-rules.md — Login باید Log شود
+  await createActivityLog({
+    userId: user.id,
+    action: 'LOGIN',
+    entityType: 'User',
+    entityId: user.id,
+    ip: context.ip ?? null,
+    device: context.userAgent ?? null,
   });
 
   const permissions = user.roles.flatMap((userRole) =>
