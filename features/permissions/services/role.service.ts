@@ -6,13 +6,30 @@ import {
   updateRole,
   replaceRolePermissions,
   softDeleteRole,
+  countRolesByIds,
 } from '../repositories/role.repository';
+import { countPermissionsByIds } from '../repositories/permission.repository';
 import { logActivity } from '@/features/activity-logs/services/log-activity.service';
-import { ConflictError, NotFoundError } from '@/shared/lib/errors';
+import { AppError, ConflictError, NotFoundError } from '@/shared/lib/errors';
 import { toRoleDto } from '../utils/role.mapper';
 import type { CreateRoleInput, UpdateRoleInput } from '../validators/role.schema';
 
 type ActorContext = { actorId: string; ip?: string | null; device?: string | null };
+
+/** فیچرهای دیگر (مثل users) فقط از طریق همین Service وجود نقش‌ها را بررسی می‌کنند */
+export async function assertRolesExist(roleIds: string[]) {
+  const count = await countRolesByIds(roleIds);
+  if (count !== roleIds.length) {
+    throw new AppError('یک یا چند نقش انتخاب‌شده معتبر نیست', 400);
+  }
+}
+
+async function assertPermissionsExist(permissionIds: string[]) {
+  const count = await countPermissionsByIds(permissionIds);
+  if (count !== permissionIds.length) {
+    throw new AppError('یک یا چند دسترسی انتخاب‌شده معتبر نیست', 400);
+  }
+}
 
 export async function listRolesService() {
   const roles = await listRoles();
@@ -22,6 +39,8 @@ export async function listRolesService() {
 export async function createRoleService(input: CreateRoleInput, context: ActorContext) {
   const existing = await findRoleByName(input.name);
   if (existing) throw new ConflictError('نقشی با این نام قبلاً ثبت شده است');
+
+  await assertPermissionsExist(input.permissionIds);
 
   const role = await createRole({
     name: input.name,
@@ -53,6 +72,10 @@ export async function updateRoleService(
   if (input.name && input.name !== existing.name) {
     const nameOwner = await findRoleByName(input.name);
     if (nameOwner) throw new ConflictError('نقشی با این نام قبلاً ثبت شده است');
+  }
+
+  if (input.permissionIds) {
+    await assertPermissionsExist(input.permissionIds);
   }
 
   await updateRole(roleId, { name: input.name, description: input.description });

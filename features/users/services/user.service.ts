@@ -8,6 +8,7 @@ import {
   replaceUserRoles,
   softDeleteUser,
 } from '../repositories/user.repository';
+import { assertRolesExist } from '@/features/permissions/services/role.service';
 import { logActivity } from '@/features/activity-logs/services/log-activity.service';
 import { ConflictError, NotFoundError, ForbiddenError } from '@/shared/lib/errors';
 import { toUserDto } from '../utils/user.mapper';
@@ -39,6 +40,8 @@ export async function getUserService(userId: string) {
 export async function createUserService(input: CreateUserInput, context: ActorContext) {
   const existing = await findUserByPhone(input.phone);
   if (existing) throw new ConflictError('کاربری با این شماره موبایل قبلاً ثبت شده است');
+
+  await assertRolesExist(input.roleIds);
 
   const passwordHash = await bcrypt.hash(input.password, 12);
 
@@ -80,6 +83,10 @@ export async function updateUserService(
   if (input.phone && input.phone !== existing.phone) {
     const phoneOwner = await findUserByPhone(input.phone);
     if (phoneOwner) throw new ConflictError('کاربری با این شماره موبایل قبلاً ثبت شده است');
+  }
+
+  if (input.roleIds) {
+    await assertRolesExist(input.roleIds);
   }
 
   const passwordHash = input.password ? await bcrypt.hash(input.password, 12) : undefined;

@@ -60,3 +60,7 @@ export async function replaceRolePermissions(roleId: string, permissionIds: stri
 export async function softDeleteRole(roleId: string) {
   return prisma.role.update({ where: { id: roleId }, data: { deletedAt: new Date() } });
 }
+
+export async function countRolesByIds(roleIds: string[]) {
+  return prisma.role.count({ where: { id: { in: roleIds }, deletedAt: null } });
+}

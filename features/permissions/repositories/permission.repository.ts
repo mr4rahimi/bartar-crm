@@ -5,3 +5,7 @@ export async function listPermissions() {
     orderBy: [{ group: 'asc' }, { code: 'asc' }],
   });
 }
+
+export async function countPermissionsByIds(permissionIds: string[]) {
+  return prisma.permission.count({ where: { id: { in: permissionIds } } });
+}
