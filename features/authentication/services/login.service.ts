@@ -1,21 +1,22 @@
 import { findUserByPhone } from '../repositories/user.repository';
 import { createSession } from '../repositories/session.repository';
-import { createActivityLog } from '../repositories/activity-log.repository';
 import { verifyPassword } from '../utils/password.utils';
 import { generateSessionToken, hashToken } from '../utils/token.utils';
 import { SESSION_DURATION_DAYS } from '../constants/session.constants';
+import { logActivity } from '@/features/activity-logs/services/log-activity.service';
+import { AppError } from '@/shared/lib/errors';
 import type { LoginInput } from '../validators/login.schema';
 
-export class InvalidCredentialsError extends Error {
+export class InvalidCredentialsError extends AppError {
   constructor() {
-    super('شماره موبایل یا رمز عبور اشتباه است');
+    super('شماره موبایل یا رمز عبور اشتباه است', 401);
     this.name = 'InvalidCredentialsError';
   }
 }
 
-export class InactiveUserError extends Error {
+export class InactiveUserError extends AppError {
   constructor() {
-    super('حساب کاربری غیرفعال است');
+    super('حساب کاربری غیرفعال است', 403);
     this.name = 'InactiveUserError';
   }
 }
@@ -54,8 +55,7 @@ export async function loginService(input: LoginInput, context: LoginContext = {}
     ip: context.ip ?? null,
   });
 
-  // طبق docs/10-development-rules.md — Login باید Log شود
-  await createActivityLog({
+  await logActivity({
     userId: user.id,
     action: 'LOGIN',
     entityType: 'User',

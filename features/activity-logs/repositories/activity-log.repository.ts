@@ -1,10 +1,13 @@
 import { prisma } from '@/shared/lib/prisma';
+import type { Prisma } from '@prisma/client';
 
-type CreateActivityLogInput = {
+export type CreateActivityLogInput = {
   userId: string;
   action: string;
   entityType: string;
   entityId: string;
+  previousValue?: Prisma.InputJsonValue;
+  newValue?: Prisma.InputJsonValue;
   ip?: string | null;
   device?: string | null;
 };

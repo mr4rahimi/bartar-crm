@@ -4,9 +4,9 @@ import {
   deleteSessionByTokenHash,
 } from '../repositories/session.repository';
 import { findUserById } from '../repositories/user.repository';
-import { createActivityLog } from '../repositories/activity-log.repository';
 import { hashToken } from '../utils/token.utils';
 import { SESSION_DURATION_DAYS, SESSION_RENEW_THRESHOLD_DAYS } from '../constants/session.constants';
+import { logActivity } from '@/features/activity-logs/services/log-activity.service';
 import type { AuthenticatedUser } from '../types/session.types';
 
 type ValidateSessionResult = {
@@ -73,8 +73,7 @@ export async function logoutService(rawToken: string, context: LogoutContext = {
 
   await deleteSessionByTokenHash(tokenHash);
 
-  // طبق docs/10-development-rules.md — Logout باید Log شود
-  await createActivityLog({
+  await logActivity({
     userId: session.userId,
     action: 'LOGOUT',
     entityType: 'User',
