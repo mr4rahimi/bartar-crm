@@ -1,0 +1,427 @@
+// =============================================================
+// Repair ERP — Prisma Schema
+// Phase 1 Scope: Authentication, Users/Roles/Permissions,
+// Repair Ticket, Part Request, Purchasing, Pricing, Vendors, Logs
+// Reference docs: 03-business-rules.md, 04-domain-model.md, 05-workflows.md
+// Out of scope for Phase 1: Inventory, CRM, Warranty, Accounting
+// =============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -------------------------------------------------------------
+// Auth / RBAC (06-user-roles.md)
+// Permission-Based Authorization — Role is just a set of Permissions
+// -------------------------------------------------------------
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  phone        String    @unique
+  email        String?   @unique
+  passwordHash String
+  isActive     Boolean   @default(true)
+
+  roles            UserRole[]
+  createdRepairs    RepairTicket[]  @relation("RepairTicketCreatedBy")
+  createdPartRequests PartRequest[] @relation("PartRequestCreatedBy")
+  purchases         Purchase[]      @relation("PurchaseBuyer")
+  statusChanges     StatusHistory[] @relation("StatusChangedBy")
+  activityLogs      ActivityLog[]
+  notifications     Notification[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+
+  permissions RolePermission[]
+  users       UserRole[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  code        String   @unique // e.g. CREATE_PART_REQUEST
+  group       String   // e.g. "Part Request"
+  description String?
+
+  roles RolePermission[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("permissions")
+}
+
+model UserRole {
+  userId String
+  roleId String
+
+  user User @relation(fields: [userId], references: [id])
+  role Role @relation(fields: [roleId], references: [id])
+
+  assignedAt DateTime @default(now())
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+
+  role       Role       @relation(fields: [roleId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
+
+  assignedAt DateTime @default(now())
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+// -------------------------------------------------------------
+// Customer / Device (04-domain-model.md)
+// Phase 1: Customer used only for linking to Repair Ticket
+// -------------------------------------------------------------
+
+model Customer {
+  id             String   @id @default(cuid())
+  name           String
+  phone          String
+  secondaryPhone String?
+  address        String?
+
+  repairTickets RepairTicket[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("customers")
+}
+
+model Brand {
+  id   String @id @default(cuid())
+  name String @unique
+
+  models  DeviceModel[]
+  devices Device[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("brands")
+}
+
+model DeviceModel {
+  id      String @id @default(cuid())
+  name    String
+  brandId String
+
+  brand   Brand    @relation(fields: [brandId], references: [id])
+  devices Device[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([brandId, name])
+  @@map("device_models")
+}
+
+model Device {
+  id      String  @id @default(cuid())
+  brandId String
+  modelId String
+  serial  String?
+  imei    String? // در آینده
+
+  brand Brand       @relation(fields: [brandId], references: [id])
+  model DeviceModel @relation(fields: [modelId], references: [id])
+
+  repairTickets RepairTicket[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("devices")
+}
+
+// -------------------------------------------------------------
+// Repair Ticket (پذیرش) — 04-domain-model.md, 03-business-rules.md
+// یک Repair Ticket می‌تواند چندین Part Request داشته باشد
+// -------------------------------------------------------------
+
+enum RepairTicketStatus {
+  OPEN
+  IN_PROGRESS
+  DELIVERED
+  CLOSED
+  CANCELLED
+}
+
+model RepairTicket {
+  id            String             @id @default(cuid())
+  ticketNumber  String             @unique
+  customerId    String
+  deviceId      String
+  status        RepairTicketStatus @default(OPEN)
+  createdById   String
+
+  customer    Customer      @relation(fields: [customerId], references: [id])
+  device      Device        @relation(fields: [deviceId], references: [id])
+  createdBy   User          @relation("RepairTicketCreatedBy", fields: [createdById], references: [id])
+  partRequests PartRequest[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("repair_tickets")
+}
+
+// -------------------------------------------------------------
+// Part / Part Request — Aggregate Root of Phase 1 (04-domain-model.md)
+// State Machine per 05-workflows.md
+// -------------------------------------------------------------
+
+model Part {
+  id       String  @id @default(cuid())
+  name     String  @unique
+  category String?
+
+  partRequests  PartRequest[]
+  priceHistories PriceHistory[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("parts")
+}
+
+enum PartQuality {
+  ORIGINAL
+  HIGH_COPY
+  COPY
+}
+
+// دقیقا مطابق State Machine در 05-workflows.md
+enum PartRequestStatus {
+  CREATED
+  WAITING_CUSTOMER
+  APPROVED
+  REJECTED
+  WAITING_PURCHASE
+  PURCHASING
+  PURCHASED
+  NOT_FOUND
+  DELIVERED
+  RETURNED
+  CONSUMED
+  CLOSED
+  CANCELLED
+}
+
+model PartRequest {
+  id             String             @id @default(cuid())
+  repairTicketId String
+  partId         String
+  quality        PartQuality
+  brand          String?
+  model          String?
+  status         PartRequestStatus  @default(CREATED)
+
+  // اعلام هزینه به مشتری (Workflow 2)
+  announcedPrice Int?
+  // بیعانه (Workflow 4 / Deposit Rules)
+  depositAmount  Int                @default(0)
+
+  isTest      Boolean @default(false)
+  description String?
+
+  createdById String
+
+  repairTicket RepairTicket @relation(fields: [repairTicketId], references: [id])
+  part         Part         @relation(fields: [partId], references: [id])
+  createdBy    User         @relation("PartRequestCreatedBy", fields: [createdById], references: [id])
+
+  purchases      Purchase[]
+  statusHistory  StatusHistory[]
+  attachments    Attachment[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("part_requests")
+}
+
+// -------------------------------------------------------------
+// Purchase / Vendor / Price History (03-business-rules.md)
+// در فاز اول: هر Part Request حداکثر یک Purchase فعال دارد
+// اما مدل یک‌به‌چند است تا مرجوعی/خرید مجدد در آینده ساده باشد
+// -------------------------------------------------------------
+
+model Vendor {
+  id       String  @id @default(cuid())
+  name     String
+  phone    String?
+  address  String?
+  isActive Boolean @default(true)
+
+  purchases Purchase[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("vendors")
+}
+
+model Purchase {
+  id            String   @id @default(cuid())
+  partRequestId String
+  vendorId      String
+  price         Int
+  description   String?
+  buyerId       String
+  purchasedAt   DateTime @default(now())
+
+  // Return Rules — 03-business-rules.md
+  isReturned  Boolean   @default(false)
+  returnedAt  DateTime?
+  returnReason String?
+
+  partRequest PartRequest @relation(fields: [partRequestId], references: [id])
+  vendor      Vendor      @relation(fields: [vendorId], references: [id])
+  buyer       User        @relation("PurchaseBuyer", fields: [buyerId], references: [id])
+
+  priceHistory PriceHistory[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("purchases")
+}
+
+enum PriceType {
+  BUY
+  SELL
+}
+
+model PriceHistory {
+  id         String    @id @default(cuid())
+  partId     String
+  purchaseId String?
+  type       PriceType @default(BUY)
+  price      Int
+  recordedAt DateTime  @default(now())
+
+  part     Part      @relation(fields: [partId], references: [id])
+  purchase Purchase? @relation(fields: [purchaseId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@map("price_histories")
+}
+
+// -------------------------------------------------------------
+// Status History — هر تغییر وضعیت باید ثبت شود (05-workflows.md - Audit Rules)
+// -------------------------------------------------------------
+
+model StatusHistory {
+  id              String             @id @default(cuid())
+  partRequestId   String
+  previousStatus  PartRequestStatus?
+  newStatus       PartRequestStatus
+  changedById     String
+  description     String?
+
+  partRequest PartRequest @relation(fields: [partRequestId], references: [id])
+  changedBy   User        @relation("StatusChangedBy", fields: [changedById], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@map("status_histories")
+}
+
+// -------------------------------------------------------------
+// Activity Log — 03-business-rules.md Audit Rules / 11-AI_INSTRUCTIONS.md
+// -------------------------------------------------------------
+
+model ActivityLog {
+  id            String   @id @default(cuid())
+  userId        String
+  action        String // e.g. "CREATE_PART_REQUEST", "REGISTER_PURCHASE"
+  entityType    String // e.g. "PartRequest"
+  entityId      String
+  previousValue Json?
+  newValue      Json?
+  ip            String?
+  device        String?
+
+  user User @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@map("activity_logs")
+}
+
+// -------------------------------------------------------------
+// Attachment — در آینده (04-domain-model.md) — اسکلت آماده شده
+// -------------------------------------------------------------
+
+model Attachment {
+  id            String  @id @default(cuid())
+  partRequestId String
+  fileUrl       String
+  fileName      String
+  mimeType      String?
+
+  partRequest PartRequest @relation(fields: [partRequestId], references: [id])
+
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  @@map("attachments")
+}
+
+// -------------------------------------------------------------
+// Notification (Internal) — 12-PRD.md Current Scope
+// -------------------------------------------------------------
+
+model Notification {
+  id      String  @id @default(cuid())
+  userId  String
+  title   String
+  message String
+  isRead  Boolean @default(false)
+  type    String?
+
+  user User @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
+}
