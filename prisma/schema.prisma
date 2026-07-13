@@ -248,10 +248,8 @@ model PartRequest {
   id             String            @id @default(cuid())
   repairTicketId String?
   receptionNumber String
-  receptionNumber String
   partId         String
   quality        PartQuality
-  quantity       Int               @default(1)
   quantity       Int               @default(1)
   brand          String?
   model          String?
