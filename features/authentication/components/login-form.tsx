@@ -32,36 +32,43 @@ export function LoginForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-      <div className="space-y-2">
+    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
+      <div className="flex flex-col gap-1.5">
         <Label htmlFor="phone">شماره موبایل</Label>
         <Input
           id="phone"
           type="tel"
           inputMode="numeric"
           dir="ltr"
+          className="text-right"
           placeholder="09xxxxxxxxx"
           autoComplete="username"
           {...register('phone')}
         />
-        {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
+        {errors.phone && <p className="text-xs text-destructive">{errors.phone.message}</p>}
       </div>
 
-      <div className="space-y-2">
+      <div className="flex flex-col gap-1.5">
         <Label htmlFor="password">رمز عبور</Label>
         <Input
           id="password"
           type="password"
           dir="ltr"
+          className="text-right"
+          placeholder="••••••••"
           autoComplete="current-password"
           {...register('password')}
         />
-        {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
+        {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
       </div>
 
-      {login.isError && <p className="text-sm text-destructive">{login.error.message}</p>}
+      {login.isError && (
+        <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3.5 py-2.5 text-[12.5px] font-medium text-destructive">
+          {login.error.message}
+        </div>
+      )}
 
-      <Button type="submit" disabled={login.isPending}>
+      <Button type="submit" className="h-12" disabled={login.isPending}>
         {login.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
         ورود
       </Button>

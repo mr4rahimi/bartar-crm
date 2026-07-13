@@ -13,10 +13,16 @@ export const metadata: Metadata = {
   description: 'سیستم مدیریت تعمیرات، خرید قطعات و خدمات پس از فروش',
 };
 
+// تم پیش‌فرض تیره است (مطابق ماکاپ) — قبل از رندر اعمال می‌شود تا فلش نداشته باشیم
+const themeInitScript = `try{var t=localStorage.getItem('theme')||'dark';if(t==='dark')document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}`;
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="fa" dir="rtl" suppressHydrationWarning>
-      <body className={`${vazirmatn.variable} font-sans antialiased`}>{children}</body>
+      <body className={`${vazirmatn.variable} font-sans antialiased`}>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        {children}
+      </body>
     </html>
   );
 }

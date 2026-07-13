@@ -6,6 +6,7 @@ import { useState, type ReactNode } from 'react';
 import { MoreHorizontal } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import type { NavItem } from '@/shared/constants/navigation';
+import { ThemeToggle } from '@/shared/components/theme-toggle';
 
 const MAX_VISIBLE_ITEMS = 3;
 
@@ -45,7 +46,10 @@ export function BottomNav({ items, userName, logoutSlot }: BottomNavProps) {
                 {item.label}
               </Link>
             ))}
-            <div className="pt-2">{logoutSlot}</div>
+            <div className="space-y-2 pt-2">
+              <ThemeToggle />
+              {logoutSlot}
+            </div>
           </div>
         </div>
       )}

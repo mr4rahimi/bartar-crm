@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { cn } from '@/shared/lib/cn';
 import type { NavItem } from '@/shared/constants/navigation';
+import { ThemeToggle } from '@/shared/components/theme-toggle';
 
 type SidebarProps = {
   items: NavItem[];
@@ -49,6 +50,7 @@ export function Sidebar({ items, userName, logoutSlot }: SidebarProps) {
       </nav>
 
       <div className="space-y-3 border-t border-border p-4">
+        <ThemeToggle />
         <div className="text-sm font-semibold">{userName}</div>
         {logoutSlot}
       </div>
