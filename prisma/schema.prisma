@@ -21,20 +21,21 @@ datasource db {
 // -------------------------------------------------------------
 
 model User {
-  id           String    @id @default(cuid())
+  id           String  @id @default(cuid())
   name         String
-  phone        String    @unique
-  email        String?   @unique
+  phone        String  @unique
+  email        String? @unique
   passwordHash String
-  isActive     Boolean   @default(true)
+  isActive     Boolean @default(true)
 
-  roles            UserRole[]
-  createdRepairs    RepairTicket[]  @relation("RepairTicketCreatedBy")
-  createdPartRequests PartRequest[] @relation("PartRequestCreatedBy")
-  purchases         Purchase[]      @relation("PurchaseBuyer")
-  statusChanges     StatusHistory[] @relation("StatusChangedBy")
-  activityLogs      ActivityLog[]
-  notifications     Notification[]
+  roles               UserRole[]
+  createdRepairs      RepairTicket[]  @relation("RepairTicketCreatedBy")
+  createdPartRequests PartRequest[]   @relation("PartRequestCreatedBy")
+  purchases           Purchase[]      @relation("PurchaseBuyer")
+  statusChanges       StatusHistory[] @relation("StatusChangedBy")
+  activityLogs        ActivityLog[]
+  notifications       Notification[]
+  sessions            Session[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -44,8 +45,8 @@ model User {
 }
 
 model Role {
-  id          String   @id @default(cuid())
-  name        String   @unique
+  id          String  @id @default(cuid())
+  name        String  @unique
   description String?
 
   permissions RolePermission[]
@@ -59,9 +60,9 @@ model Role {
 }
 
 model Permission {
-  id          String   @id @default(cuid())
-  code        String   @unique // e.g. CREATE_PART_REQUEST
-  group       String   // e.g. "Part Request"
+  id          String  @id @default(cuid())
+  code        String  @unique // e.g. CREATE_PART_REQUEST
+  group       String // e.g. "Part Request"
   description String?
 
   roles RolePermission[]
@@ -104,7 +105,7 @@ model RolePermission {
 // -------------------------------------------------------------
 
 model Customer {
-  id             String   @id @default(cuid())
+  id             String  @id @default(cuid())
   name           String
   phone          String
   secondaryPhone String?
@@ -180,16 +181,16 @@ enum RepairTicketStatus {
 }
 
 model RepairTicket {
-  id            String             @id @default(cuid())
-  ticketNumber  String             @unique
-  customerId    String
-  deviceId      String
-  status        RepairTicketStatus @default(OPEN)
-  createdById   String
+  id           String             @id @default(cuid())
+  ticketNumber String             @unique
+  customerId   String
+  deviceId     String
+  status       RepairTicketStatus @default(OPEN)
+  createdById  String
 
-  customer    Customer      @relation(fields: [customerId], references: [id])
-  device      Device        @relation(fields: [deviceId], references: [id])
-  createdBy   User          @relation("RepairTicketCreatedBy", fields: [createdById], references: [id])
+  customer     Customer      @relation(fields: [customerId], references: [id])
+  device       Device        @relation(fields: [deviceId], references: [id])
+  createdBy    User          @relation("RepairTicketCreatedBy", fields: [createdById], references: [id])
   partRequests PartRequest[]
 
   createdAt DateTime  @default(now())
@@ -209,7 +210,7 @@ model Part {
   name     String  @unique
   category String?
 
-  partRequests  PartRequest[]
+  partRequests   PartRequest[]
   priceHistories PriceHistory[]
 
   createdAt DateTime  @default(now())
@@ -243,18 +244,18 @@ enum PartRequestStatus {
 }
 
 model PartRequest {
-  id             String             @id @default(cuid())
+  id             String            @id @default(cuid())
   repairTicketId String
   partId         String
   quality        PartQuality
   brand          String?
   model          String?
-  status         PartRequestStatus  @default(CREATED)
+  status         PartRequestStatus @default(CREATED)
 
   // اعلام هزینه به مشتری (Workflow 2)
   announcedPrice Int?
   // بیعانه (Workflow 4 / Deposit Rules)
-  depositAmount  Int                @default(0)
+  depositAmount  Int  @default(0)
 
   isTest      Boolean @default(false)
   description String?
@@ -265,9 +266,9 @@ model PartRequest {
   part         Part         @relation(fields: [partId], references: [id])
   createdBy    User         @relation("PartRequestCreatedBy", fields: [createdById], references: [id])
 
-  purchases      Purchase[]
-  statusHistory  StatusHistory[]
-  attachments    Attachment[]
+  purchases     Purchase[]
+  statusHistory StatusHistory[]
+  attachments   Attachment[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -308,8 +309,8 @@ model Purchase {
   purchasedAt   DateTime @default(now())
 
   // Return Rules — 03-business-rules.md
-  isReturned  Boolean   @default(false)
-  returnedAt  DateTime?
+  isReturned   Boolean   @default(false)
+  returnedAt   DateTime?
   returnReason String?
 
   partRequest PartRequest @relation(fields: [partRequestId], references: [id])
@@ -350,12 +351,12 @@ model PriceHistory {
 // -------------------------------------------------------------
 
 model StatusHistory {
-  id              String             @id @default(cuid())
-  partRequestId   String
-  previousStatus  PartRequestStatus?
-  newStatus       PartRequestStatus
-  changedById     String
-  description     String?
+  id             String             @id @default(cuid())
+  partRequestId  String
+  previousStatus PartRequestStatus?
+  newStatus      PartRequestStatus
+  changedById    String
+  description    String?
 
   partRequest PartRequest @relation(fields: [partRequestId], references: [id])
   changedBy   User        @relation("StatusChangedBy", fields: [changedById], references: [id])
@@ -370,7 +371,7 @@ model StatusHistory {
 // -------------------------------------------------------------
 
 model ActivityLog {
-  id            String   @id @default(cuid())
+  id            String  @id @default(cuid())
   userId        String
   action        String // e.g. "CREATE_PART_REQUEST", "REGISTER_PURCHASE"
   entityType    String // e.g. "PartRequest"
@@ -424,4 +425,25 @@ model Notification {
   createdAt DateTime @default(now())
 
   @@map("notifications")
+}
+
+// -------------------------------------------------------------
+// Session — Manual Session-Based Auth (08-api-conventions.md)
+// توکن خام فقط در کوکی مرورگر کاربر است؛ اینجا فقط هش آن ذخیره می‌شود
+// -------------------------------------------------------------
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  userAgent String?
+  ip        String?
+  expiresAt DateTime
+
+  user User @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("sessions")
 }
