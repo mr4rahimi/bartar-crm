@@ -114,9 +114,7 @@ export function DashboardView() {
               <YAxis tick={{ fontSize: 10, fill: 'currentColor' }} tickLine={false} axisLine={false} width={30} />
               <Tooltip
                 contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 10, fontSize: 12, fontFamily: 'inherit' }}
-                formatter={(value: number, key) =>
-                  key === 'million' ? [`${value.toLocaleString('fa-IR')} میلیون`, 'مبلغ'] : [value, key]
-                }
+                formatter={(value) => [`${Number(value ?? 0).toLocaleString('fa-IR')} میلیون`, 'مبلغ']}
                 labelFormatter={(label) => `تاریخ: ${label}`}
               />
               <Area type="monotone" dataKey="million" stroke="#22c55e" strokeWidth={2} fill="url(#trendFill)" />
@@ -137,7 +135,7 @@ export function DashboardView() {
                 <Tooltip
                   cursor={{ fill: 'transparent' }}
                   contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 10, fontSize: 12, fontFamily: 'inherit' }}
-                  formatter={(value: number) => [value.toLocaleString('fa-IR'), 'تعداد']}
+                  formatter={(value) => [Number(value ?? 0).toLocaleString('fa-IR'), 'تعداد']}
                 />
                 <Bar dataKey="count" radius={[6, 6, 0, 0]}>
                   {statusChartData.map((entry) => (

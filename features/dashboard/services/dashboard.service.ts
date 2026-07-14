@@ -46,7 +46,7 @@ export async function getDashboardService() {
     }
   }
 
-  const today = trend[trend.length - 1];
+  const today = trend[trend.length - 1] ?? { date: '', count: 0, total: 0 };
 
   return {
     stats: {
