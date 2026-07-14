@@ -21,3 +21,5 @@ export const createPartRequestSchema = z.object({
 });
 
 export type CreatePartRequestInput = z.infer<typeof createPartRequestSchema>;
+/** تایپ ورودی خام فرم (قبل از transform — رشته هم مجاز است) */
+export type CreatePartRequestFormInput = z.input<typeof createPartRequestSchema>;

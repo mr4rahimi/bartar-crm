@@ -7,6 +7,7 @@
    dark:  appBg #0b0f14 / surface #151a21 / border #232a33 */
 @layer base {
   :root {
+    --font-vazirmatn: 'Vazirmatn';
     --background: 220 16% 96%;
     --foreground: 240 6% 10%;
     --card: 0 0% 100%;

@@ -7,16 +7,18 @@ import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { Select } from '@/shared/components/ui/select';
 import { Skeleton } from '@/shared/components/ui/skeleton';
+import { cn } from '@/shared/lib/cn';
 import { useDebouncedValue } from '@/shared/hooks/use-debounced-value';
 import { useTaxonomy } from '@/features/part-requests/hooks/use-taxonomy';
 import { usePriceList } from '../hooks/use-prices';
 import type { PriceListRow } from '../types/price.types';
 
 // ترتیب ستون‌ها مطابق price-next: کپی، های‌کپی (کپی۱)، اورجینال
-const QUALITY_COLUMNS: { quality: PartQuality; label: string }[] = [
-  { quality: 'COPY', label: 'کپی' },
-  { quality: 'HIGH_COPY', label: 'های‌کپی' },
-  { quality: 'ORIGINAL', label: 'اورجینال' },
+// رنگ هر کیفیت با خط کلفت سمت راست باکس + لِجند بالای لیست مشخص می‌شود
+const QUALITY_COLUMNS: { quality: PartQuality; label: string; bar: string; dot: string }[] = [
+  { quality: 'COPY', label: 'کپی', bar: 'border-r-[#f97316]', dot: 'bg-[#f97316]' },
+  { quality: 'HIGH_COPY', label: 'های‌کپی', bar: 'border-r-[#3b82f6]', dot: 'bg-[#3b82f6]' },
+  { quality: 'ORIGINAL', label: 'اورجینال', bar: 'border-r-[#22c55e]', dot: 'bg-[#22c55e]' },
 ];
 
 function PriceCell({ value }: { value: number | null | undefined }) {
@@ -24,7 +26,7 @@ function PriceCell({ value }: { value: number | null | undefined }) {
     return <span className="text-[11px] text-muted-foreground">ناموجود</span>;
   }
   return (
-    <span className="font-extrabold text-[#15803d] dark:text-[#4ade80]">
+    <span className="text-[18px] font-extrabold leading-6">
       {value.toLocaleString('fa-IR')} <span className="text-[10px] font-normal text-muted-foreground">ت</span>
     </span>
   );
@@ -96,6 +98,15 @@ export function PriceListView({ isPublic, showBuy = false, onEdit, onHistory }: 
         </div>
       </div>
 
+      <div className="flex items-center gap-4 px-1">
+        {QUALITY_COLUMNS.map(({ quality, label, dot }) => (
+          <span key={quality} className="flex items-center gap-1.5 text-[12px] font-bold text-muted-foreground">
+            <span className={cn('h-2.5 w-2.5 rounded-full', dot)} />
+            {label}
+          </span>
+        ))}
+      </div>
+
       {query.isLoading && (
         <div className="space-y-2">
           {[1, 2, 3, 4].map((key) => <Skeleton key={key} className="h-24 w-full" />)}
@@ -163,16 +174,19 @@ export function PriceListView({ isPublic, showBuy = false, onEdit, onHistory }: 
               </div>
 
               <div className="mt-2.5 grid grid-cols-3 gap-2">
-                {QUALITY_COLUMNS.map(({ quality, label }) => {
+                {QUALITY_COLUMNS.map(({ quality, bar }) => {
                   const price = row.prices[quality];
                   return (
-                    <div key={quality} className="rounded-md border border-border bg-background p-2.5 text-right">
-                      <div className="text-[10.5px] font-bold text-muted-foreground">{label}</div>
-                      <div className="mt-0.5 text-[12.5px]">
-                        <PriceCell value={price?.sellPrice} />
-                      </div>
+                    <div
+                      key={quality}
+                      className={cn(
+                        'flex flex-col items-center justify-center rounded-md border border-border border-r-4 bg-background px-2 py-2',
+                        bar,
+                      )}
+                    >
+                      <PriceCell value={price?.sellPrice} />
                       {showBuy && (
-                        <div className="mt-0.5 text-[10px] text-muted-foreground">
+                        <div className="mt-0.5 text-[10.5px] text-muted-foreground">
                           خرید: {price?.buyPrice != null ? price.buyPrice.toLocaleString('fa-IR') : '—'}
                         </div>
                       )}

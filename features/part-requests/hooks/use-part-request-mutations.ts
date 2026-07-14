@@ -3,14 +3,14 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/shared/lib/api-client';
 import type { PartRequestDetailDto } from '../types/part-request.types';
-import type { CreatePartRequestInput } from '../validators/create-part-request.schema';
+import type { CreatePartRequestFormInput } from '../validators/create-part-request.schema';
 import type { PartRequestAction } from '../constants/state-machine.constants';
 
 export function useCreatePartRequest() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: CreatePartRequestInput) =>
+    mutationFn: (input: CreatePartRequestFormInput) =>
       apiFetch<PartRequestDetailDto>('/api/v1/part-requests', {
         method: 'POST',
         body: JSON.stringify(input),

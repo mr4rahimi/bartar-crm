@@ -127,7 +127,7 @@ async function main() {
 
     for (const [columnIndex, quality] of QUALITY_COLUMNS) {
       const raw = row[columnIndex];
-      if (raw === null) continue;
+      if (raw == null) continue; // null یا undefined
       const sellPrice = parseInt(raw, 10);
       if (Number.isNaN(sellPrice) || sellPrice <= 0) continue;
 

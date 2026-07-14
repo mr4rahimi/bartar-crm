@@ -87,16 +87,18 @@ export function PartRequestFormDialog({ open, onClose }: PartRequestFormDialogPr
       }
 
       createRequest.mutate(
-        {
-          receptionNumber,
-          partName,
-          quality,
-          quantity,
-          modelId,
-          announcedPrice: announcedPrice.trim() || undefined,
-          isTest,
-          description: description.trim() || undefined,
-        },
+       {
+         receptionNumber,
+         partName,
+         quality,
+         quantity: parseInt(quantity, 10) || 1,
+         modelId,
+         announcedPrice: announcedPrice.trim()
+           ? parseInt(announcedPrice, 10)
+           : undefined,
+         isTest,
+         description: description.trim() || undefined,
+       },
         {
           onSuccess: () => { toast('درخواست قطعه ثبت شد'); onClose(); },
           onError: (error) => toast(error.message, 'error'),

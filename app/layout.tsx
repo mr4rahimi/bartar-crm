@@ -1,12 +1,7 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
-import { Vazirmatn } from 'next/font/google';
+import 'vazirmatn/Vazirmatn-font-face.css';
 import './globals.css';
-
-const vazirmatn = Vazirmatn({
-  subsets: ['arabic'],
-  variable: '--font-vazirmatn',
-});
 
 export const metadata: Metadata = {
   title: 'برتر CRM',
@@ -19,7 +14,7 @@ const themeInitScript = `try{var t=localStorage.getItem('theme')||'dark';if(t===
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="fa" dir="rtl" suppressHydrationWarning>
-      <body className={`${vazirmatn.variable} font-sans antialiased`}>
+      <body className="font-sans antialiased">
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         {children}
       </body>
