@@ -8,6 +8,7 @@ import {
   createModel,
   findDeviceTypeById,
 } from '../repositories/taxonomy.repository';
+import { listPartsForTaxonomy } from '../repositories/part-price.repository';
 import { logActivity } from '@/features/activity-logs/services/log-activity.service';
 import { NotFoundError, ConflictError } from '@/shared/lib/errors';
 import type { CreateModelInput } from '../validators/create-model.schema';
@@ -16,16 +17,18 @@ type ActorContext = { actorId: string; ip?: string | null; device?: string | nul
 
 /** لیست‌های تخت — انتخاب آبشاری سمت کلاینت فیلتر می‌شود */
 export async function getTaxonomyService() {
-  const [deviceTypes, brands, models] = await Promise.all([
+  const [deviceTypes, brands, models, parts] = await Promise.all([
     listDeviceTypes(),
     listBrands(),
     listModels(),
+    listPartsForTaxonomy(),
   ]);
 
   return {
     deviceTypes: deviceTypes.map((type) => ({ id: type.id, name: type.name })),
     brands: brands.map((brand) => ({ id: brand.id, name: brand.name })),
     models,
+    parts: parts.map((part) => ({ id: part.id, name: part.name })),
   };
 }
 

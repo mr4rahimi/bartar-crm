@@ -38,3 +38,62 @@ export async function createPriceHistory(params: {
 }) {
   return prisma.priceHistory.create({ data: params });
 }
+
+export async function listPricesByModel(modelId: string) {
+  return prisma.partPrice.findMany({
+    where: { modelId },
+    include: { part: true },
+    orderBy: { part: { name: 'asc' } },
+  });
+}
+
+export async function listNeedsReview() {
+  return prisma.partPrice.findMany({
+    where: { needsReview: true },
+    include: { part: true, model: { include: { brand: true } } },
+    orderBy: { updatedAt: 'desc' },
+  });
+}
+
+/** ویرایش دستی ادمین — پرچم بازبینی پاک می‌شود */
+export async function setPartPriceManual(params: {
+  modelId: string;
+  partId: string;
+  quality: PartQuality;
+  buyPrice?: number | null;
+  sellPrice?: number | null;
+  notes?: string | null;
+}) {
+  const { modelId, partId, quality, buyPrice, sellPrice, notes } = params;
+
+  return prisma.partPrice.upsert({
+    where: { modelId_partId_quality: { modelId, partId, quality } },
+    update: {
+      ...(buyPrice !== undefined && { buyPrice }),
+      ...(sellPrice !== undefined && { sellPrice }),
+      ...(notes !== undefined && { notes }),
+      needsReview: false,
+    },
+    create: {
+      modelId,
+      partId,
+      quality,
+      buyPrice: buyPrice ?? null,
+      sellPrice: sellPrice ?? null,
+      notes: notes ?? null,
+      needsReview: false,
+    },
+  });
+}
+
+export async function listPriceHistory(modelId: string, partId: string) {
+  return prisma.priceHistory.findMany({
+    where: { modelId, partId },
+    orderBy: { recordedAt: 'desc' },
+    take: 50,
+  });
+}
+
+export async function listPartsForTaxonomy() {
+  return prisma.part.findMany({ where: { deletedAt: null }, orderBy: { name: 'asc' } });
+}

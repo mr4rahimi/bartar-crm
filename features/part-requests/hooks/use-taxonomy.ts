@@ -14,12 +14,13 @@ export type Taxonomy = {
   deviceTypes: { id: string; name: string }[];
   brands: { id: string; name: string }[];
   models: TaxonomyModel[];
+  parts: { id: string; name: string }[];
 };
 
-export function useTaxonomy() {
+export function useTaxonomy(isPublic = false) {
   return useQuery({
-    queryKey: ['taxonomy'],
-    queryFn: () => apiFetch<Taxonomy>('/api/v1/taxonomy'),
+    queryKey: ['taxonomy', isPublic],
+    queryFn: () => apiFetch<Taxonomy>(isPublic ? '/api/v1/public/taxonomy' : '/api/v1/taxonomy'),
   });
 }
 
