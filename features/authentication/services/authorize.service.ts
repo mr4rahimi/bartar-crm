@@ -21,3 +21,10 @@ export function requirePermission(user: AuthenticatedUser, permissionCode: strin
     throw new ForbiddenError();
   }
 }
+
+/** حداقل یکی از Permissionها کافی است (مثلاً دیدن فروشندگان برای خریدار یا مدیر فروشنده) */
+export function requireAnyPermission(user: AuthenticatedUser, permissionCodes: string[]): void {
+  if (!permissionCodes.some((code) => user.permissions.includes(code))) {
+    throw new ForbiddenError();
+  }
+}

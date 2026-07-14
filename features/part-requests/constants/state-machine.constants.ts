@@ -41,7 +41,7 @@ export const ACTION_DEFS: ActionDef[] = [
   { action: 'CANCEL', label: 'لغو درخواست', from: ['CREATED', 'WAITING_CUSTOMER', 'APPROVED', 'WAITING_PURCHASE'], to: 'CANCELLED', permission: 'CHANGE_STATUS', requiresConfirm: true, tone: 'destructive' },
   { action: 'START_PURCHASE', label: 'شروع خرید', from: ['WAITING_PURCHASE'], to: 'PURCHASING', permission: 'START_PURCHASE', tone: 'primary' },
   { action: 'MARK_NOT_FOUND', label: 'عدم موجودی', from: ['WAITING_PURCHASE', 'PURCHASING'], to: 'NOT_FOUND', permission: 'NOT_FOUND', requiresConfirm: true, tone: 'destructive' },
-  { action: 'BACK_TO_QUEUE', label: 'بازگشت به صف خرید', from: ['NOT_FOUND'], to: 'WAITING_PURCHASE', permission: 'CHANGE_STATUS', tone: 'outline' },
+  { action: 'BACK_TO_QUEUE', label: 'بازگشت به صف خرید', from: ['NOT_FOUND', 'RETURNED'], to: 'WAITING_PURCHASE', permission: 'CHANGE_STATUS', tone: 'outline' },
   { action: 'DELIVER', label: 'تحویل به تعمیرکار', from: ['PURCHASED'], to: 'DELIVERED', permission: 'CHANGE_STATUS', tone: 'primary' },
   { action: 'CONSUME', label: 'مصرف / نصب شد', from: ['DELIVERED'], to: 'CONSUMED', permission: 'CHANGE_STATUS', tone: 'primary' },
   { action: 'CLOSE', label: 'بستن درخواست', from: ['CONSUMED'], to: 'CLOSED', permission: 'CHANGE_STATUS', tone: 'outline' },

@@ -160,3 +160,70 @@ export async function applyPartRequestActionService(
 
   return getPartRequestService(requestId);
 }
+
+// ----- گذارهای سیستمیِ خرید — فقط از طریق Service فیچر purchases فراخوانی می‌شوند -----
+
+/** ثبت خرید موفق: WAITING_PURCHASE/PURCHASING → PURCHASED (Workflow 7) */
+export async function markPartRequestPurchased(
+  requestId: string,
+  context: ActorContext,
+  description: string,
+) {
+  const request = await findPartRequestById(requestId);
+  if (!request) throw new NotFoundError('درخواست قطعه یافت نشد');
+
+  if (request.status !== 'PURCHASING' && request.status !== 'WAITING_PURCHASE') {
+    throw new AppError(
+      `از وضعیت «${PART_REQUEST_STATUS_LABELS[request.status]}» امکان ثبت خرید وجود ندارد`,
+      409,
+    );
+  }
+
+  // گذار مستقیم از صف: اول PURCHASING ثبت می‌شود تا State Machine حفظ شود
+  if (request.status === 'WAITING_PURCHASE') {
+    await transitionPartRequest({
+      requestId,
+      previousStatus: 'WAITING_PURCHASE',
+      newStatus: 'PURCHASING',
+      changedById: context.actorId,
+      description: 'شروع خرید (هنگام ثبت خرید)',
+    });
+  }
+
+  await transitionPartRequest({
+    requestId,
+    previousStatus: 'PURCHASING',
+    newStatus: 'PURCHASED',
+    changedById: context.actorId,
+    description,
+  });
+
+  return request;
+}
+
+/** مرجوعی: PURCHASED/DELIVERED → RETURNED (Workflow 10) */
+export async function markPartRequestReturned(
+  requestId: string,
+  context: ActorContext,
+  description: string,
+) {
+  const request = await findPartRequestById(requestId);
+  if (!request) throw new NotFoundError('درخواست قطعه یافت نشد');
+
+  if (request.status !== 'PURCHASED' && request.status !== 'DELIVERED') {
+    throw new AppError(
+      `از وضعیت «${PART_REQUEST_STATUS_LABELS[request.status]}» امکان مرجوعی وجود ندارد`,
+      409,
+    );
+  }
+
+  await transitionPartRequest({
+    requestId,
+    previousStatus: request.status,
+    newStatus: 'RETURNED',
+    changedById: context.actorId,
+    description,
+  });
+
+  return request;
+}
