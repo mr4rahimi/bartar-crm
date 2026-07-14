@@ -207,3 +207,51 @@ export async function getPriceHistoryService(
     recordedAt: entry.recordedAt,
   }));
 }
+
+// ----- لیست تخت قیمت‌ها با جستجوی لایو (مطابق price-next) -----
+
+import { listPriceRows, type PriceRowFilters } from '../repositories/part-price.repository';
+import type { PriceListRow } from '../types/price.types';
+
+const PRICE_LIST_PAGE_SIZE = 30;
+
+export async function getPriceListService(
+  filters: PriceRowFilters & { page: number },
+  includeBuy: boolean,
+) {
+  const records = await listPriceRows(filters);
+
+  // گروه‌بندی به ازای (مدل + قطعه) — هر ردیف سه ستون کیفیت
+  const rows = new Map<string, PriceListRow>();
+  for (const record of records) {
+    const key = `${record.modelId}:${record.partId}`;
+    const row = rows.get(key) ?? {
+      modelId: record.modelId,
+      partId: record.partId,
+      deviceTypeName: record.model.deviceType?.name ?? null,
+      brandName: record.model.brand.name,
+      modelName: record.model.name,
+      partName: record.part.name,
+      updatedAt: record.updatedAt,
+      prices: {},
+    };
+
+    row.prices[record.quality] = {
+      sellPrice: record.sellPrice,
+      notes: record.notes,
+      ...(includeBuy && { buyPrice: record.buyPrice, needsReview: record.needsReview }),
+    };
+    if (record.updatedAt > row.updatedAt) row.updatedAt = record.updatedAt;
+    rows.set(key, row);
+  }
+
+  const allRows = [...rows.values()];
+  const start = (filters.page - 1) * PRICE_LIST_PAGE_SIZE;
+
+  return {
+    items: allRows.slice(start, start + PRICE_LIST_PAGE_SIZE),
+    total: allRows.length,
+    page: filters.page,
+    pageSize: PRICE_LIST_PAGE_SIZE,
+  };
+}

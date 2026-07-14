@@ -31,3 +31,14 @@ export type PriceHistoryItem = {
   price: number;
   recordedAt: Date;
 };
+
+export type PriceListRow = {
+  modelId: string;
+  partId: string;
+  deviceTypeName: string | null;
+  brandName: string;
+  modelName: string;
+  partName: string;
+  updatedAt: Date;
+  prices: Partial<Record<PartQuality, QualityPrice>>;
+};

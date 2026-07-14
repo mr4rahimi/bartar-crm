@@ -97,3 +97,33 @@ export async function listPriceHistory(modelId: string, partId: string) {
 export async function listPartsForTaxonomy() {
   return prisma.part.findMany({ where: { deletedAt: null }, orderBy: { name: 'asc' } });
 }
+
+export type PriceRowFilters = {
+  search?: string;
+  deviceTypeId?: string;
+  brandId?: string;
+  partId?: string;
+};
+
+/** ردیف‌های قیمت برای لیست تخت (نمایش مثل price-next) — حجم فاز ۱ اجازه‌ی take بالا می‌دهد */
+export async function listPriceRows({ search, deviceTypeId, brandId, partId }: PriceRowFilters) {
+  return prisma.partPrice.findMany({
+    where: {
+      ...(partId && { partId }),
+      model: {
+        ...(brandId && { brandId }),
+        ...(deviceTypeId && { deviceTypeId }),
+      },
+      ...(search && {
+        OR: [
+          { model: { name: { contains: search, mode: 'insensitive' } } },
+          { model: { brand: { name: { contains: search, mode: 'insensitive' } } } },
+          { part: { name: { contains: search, mode: 'insensitive' } } },
+        ],
+      }),
+    },
+    include: { part: true, model: { include: { brand: true, deviceType: true } } },
+    orderBy: { updatedAt: 'desc' },
+    take: 900,
+  });
+}
