@@ -61,3 +61,37 @@
 - Part Request به تیکت داخلی وابسته نیست: فیلد receptionNumber (متن آزاد از نرم‌افزار پذیرش خارجی) جایگزین اتصال اجباری به RepairTicket می‌شود (repairTicketId اختیاری می‌ماند برای آینده).
 - اولویت فاز جاری: ۱) ثبت درخواست قطعه برای خرید ۲) تایید و ثبت خرید. سپس: سینک قیمت‌ها با نرم‌افزار اعلام هزینه (جزئیات از کارفرما دریافت می‌شود).
 - ورودی‌های شماره موبایل در کل سیستم ارقام فارسی/عربی را می‌پذیرند (نرمال‌سازی در Zod).
+
+---
+
+## ✅ تکمیل‌شده (ادامه — 2026/07/14)
+
+### Design System + App Shell
+- توکن‌های رنگی از ماکاپ ui/ (روشن/تیره، پیش‌فرض تیره + سوییچر)، فونت Vazirmatn، RTL سراسری
+- Shell: سایدبار دسکتاپ + Bottom Nav موبایل با فیلتر آیتم‌ها بر اساس Permission
+- کامپوننت‌های پایه: Button, Input, Label, Badge, Dialog (BottomSheet/Modal), Switch, Textarea, Skeleton, Toast, StatusChip
+
+### Feature: Users & Roles (کامل با UI)
+- صفحات /users و /roles: لیست کارتی/جدولی، فرم‌ها، ماتریس دسترسی گروه‌بندی‌شده با انتخاب گروهی، دیالوگ حذف
+
+### Feature: Repairs (نگهداری — توسعه به فاز بعد موکول شد)
+- ثبت پذیرش با ساخت سریع مشتری، Upsert برند/مدل، شماره تیکت صعودی — فعلاً پذیرش با نرم‌افزار خارجی است
+
+### Feature: Part Requests (کامل — قلب سیستم)
+- Schema: receptionNumber (متن آزاد)، quantity، repairTicketId اختیاری
+- ماشین وضعیت داده‌محور (ACTION_DEFS) دقیقاً طبق 05-workflows.md + تفسیرها:
+  NOT_FOUND→WAITING_PURCHASE مجاز | APPROVE خودکار وارد صف خرید (دو رکورد History) |
+  CANCELLED فقط از CREATED/WAITING_CUSTOMER/APPROVED/WAITING_PURCHASE
+- هر گذار: StatusHistory (تراکنشی) + ActivityLog | گذار غیرمجاز → 409
+- UI: لیست با چیپ‌های وضعیت رنگی + فرم ثبت + صفحه جزئیات با تایم‌لاین و اکشن‌های وابسته به وضعیت/Permission
+- نرمال‌سازی ارقام فارسی در همه‌ی ورودی‌های عددی/موبایل
+
+### زیرساخت‌های افزوده
+- AppError/handleApiError، apiFetch با نمایش خطای فیلدها، positiveIntField، useDebouncedValue
+
+## 🔜 قدم‌های بعدی (به‌روزشده)
+1. Pricing Integration مرحله ۱ و ۲ (Schema تاکسونومی + اتصال فرم درخواست) — docs/15-pricing-integration.md
+2. Feature: Purchasing با Auto-Pricing
+3. صفحه عمومی /prices + پنل مدیریت قیمت
+4. Import داده از price-next
+5. Vendors UI | لاگ فعالیت‌ها | Dashboard آماری
