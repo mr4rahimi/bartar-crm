@@ -55,6 +55,7 @@ export async function findPartRequestById(requestId: string) {
 export type CreatePartRequestData = {
   receptionNumber: string;
   partId: string;
+  modelId: string | null;
   quality: PartQuality;
   quantity: number;
   brand: string | null;

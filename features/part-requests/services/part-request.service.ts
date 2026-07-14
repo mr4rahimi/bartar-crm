@@ -7,6 +7,7 @@ import {
 import { upsertPartByName, listParts } from '../repositories/part.repository';
 import { findActionDef } from '../constants/state-machine.constants';
 import { PART_REQUEST_STATUS_LABELS } from '@/shared/constants/part-request-status';
+import { getModelForLinking } from '@/features/pricing/services/taxonomy.service';
 import { logActivity } from '@/features/activity-logs/services/log-activity.service';
 import { AppError, NotFoundError } from '@/shared/lib/errors';
 import { toPartRequestDto, toPartRequestDetailDto } from '../utils/part-request.mapper';
@@ -44,13 +45,17 @@ export async function createPartRequestService(
 ) {
   const part = await upsertPartByName(input.partName);
 
+  // اتصال به تاکسونومی: نام برند/مدل برای نمایش از تاکسونومی denormalize می‌شود
+  const linkedModel = input.modelId ? await getModelForLinking(input.modelId) : null;
+
   const request = await createPartRequest({
     receptionNumber: input.receptionNumber,
     partId: part.id,
+    modelId: linkedModel?.id ?? null,
     quality: input.quality,
     quantity: input.quantity,
-    brand: input.brand || null,
-    model: input.model || null,
+    brand: linkedModel?.brandName ?? input.brand ?? null,
+    model: linkedModel?.name ?? input.model ?? null,
     announcedPrice: input.announcedPrice ?? null,
     isTest: input.isTest,
     description: input.description || null,
