@@ -10,13 +10,13 @@ import { Label } from '@/shared/components/ui/label';
 import { Select } from '@/shared/components/ui/select';
 import { Textarea } from '@/shared/components/ui/textarea';
 import { Switch } from '@/shared/components/ui/switch';
+import { PromptDialog } from '@/shared/components/ui/prompt-dialog';
 import { useToast } from '@/shared/components/providers/toast-provider';
 import { cn } from '@/shared/lib/cn';
 import { useCreatePartRequest } from '../hooks/use-part-request-mutations';
 import { usePartOptions } from '../hooks/use-part-requests';
 import { useTaxonomy, useCreateModel } from '../hooks/use-taxonomy';
 import { useQuickCreate } from '../hooks/use-quick-create';
-import { PromptDialog } from '@/shared/components/ui/prompt-dialog';
 import { QUALITY_LABELS } from '../constants/state-machine.constants';
 
 type PartRequestFormDialogProps = { open: boolean; onClose: () => void };
@@ -28,8 +28,6 @@ export function PartRequestFormDialog({ open, onClose }: PartRequestFormDialogPr
   const createRequest = useCreatePartRequest();
   const createModel = useCreateModel();
   const quickCreate = useQuickCreate();
-  const [isBrandPromptOpen, setIsBrandPromptOpen] = useState(false);
-  const [isCreatingBrand, setIsCreatingBrand] = useState(false);
   const partOptions = usePartOptions();
   const taxonomy = useTaxonomy();
 
@@ -37,12 +35,17 @@ export function PartRequestFormDialog({ open, onClose }: PartRequestFormDialogPr
   const [deviceTypeId, setDeviceTypeId] = useState('');
   const [brandId, setBrandId] = useState('');
   const [modelName, setModelName] = useState('');
-  const [partName, setPartName] = useState('');
+  const [partId, setPartId] = useState('');
   const [quality, setQuality] = useState<PartQuality>('ORIGINAL');
   const [quantity, setQuantity] = useState('1');
   const [announcedPrice, setAnnouncedPrice] = useState('');
   const [isTest, setIsTest] = useState(false);
   const [description, setDescription] = useState('');
+
+  const [isBrandPromptOpen, setIsBrandPromptOpen] = useState(false);
+  const [isCreatingBrand, setIsCreatingBrand] = useState(false);
+  const [isPartPromptOpen, setIsPartPromptOpen] = useState(false);
+  const [isCreatingPart, setIsCreatingPart] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -50,7 +53,7 @@ export function PartRequestFormDialog({ open, onClose }: PartRequestFormDialogPr
     setDeviceTypeId('');
     setBrandId('');
     setModelName('');
-    setPartName('');
+    setPartId('');
     setQuality('ORIGINAL');
     setQuantity('1');
     setAnnouncedPrice('');
@@ -78,6 +81,10 @@ export function PartRequestFormDialog({ open, onClose }: PartRequestFormDialogPr
       toast('نوع دستگاه، برند و مدل را مشخص کنید', 'error');
       return;
     }
+    if (!partId) {
+      toast('قطعه را انتخاب کنید', 'error');
+      return;
+    }
 
     try {
       // مدل موجود نبود → ثبت مدل جدید در لحظه (docs/15-pricing-integration.md)
@@ -92,18 +99,16 @@ export function PartRequestFormDialog({ open, onClose }: PartRequestFormDialogPr
       }
 
       createRequest.mutate(
-       {
-         receptionNumber,
-         partName,
-         quality,
-         quantity: parseInt(quantity, 10) || 1,
-         modelId,
-         announcedPrice: announcedPrice.trim()
-           ? parseInt(announcedPrice, 10)
-           : undefined,
-         isTest,
-         description: description.trim() || undefined,
-       },
+        {
+          receptionNumber,
+          partId,
+          quality,
+          quantity,
+          modelId,
+          announcedPrice: announcedPrice.trim() || undefined,
+          isTest,
+          description: description.trim() || undefined,
+        },
         {
           onSuccess: () => { toast('درخواست قطعه ثبت شد'); onClose(); },
           onError: (error) => toast(error.message, 'error'),
@@ -201,17 +206,27 @@ export function PartRequestFormDialog({ open, onClose }: PartRequestFormDialogPr
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="partName">قطعه</Label>
-          <Input
-            id="partName"
-            list="part-options"
-            placeholder="مثلاً: باتری"
-            value={partName}
-            onChange={(event) => setPartName(event.target.value)}
-          />
-          <datalist id="part-options">
-            {partOptions.data?.map((part) => <option key={part.id} value={part.name} />)}
-          </datalist>
+          <Label htmlFor="partId">قطعه</Label>
+          <div className="flex gap-1.5">
+            <Select
+              id="partId"
+              value={partId}
+              onChange={(event) => setPartId(event.target.value)}
+            >
+              <option value="">انتخاب کنید…</option>
+              {partOptions.data?.map((part) => (
+                <option key={part.id} value={part.id}>{part.name}</option>
+              ))}
+            </Select>
+            <button
+              type="button"
+              title="افزودن قطعه جدید"
+              onClick={() => setIsPartPromptOpen(true)}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-border bg-card text-lg font-bold text-primary"
+            >
+              +
+            </button>
+          </div>
         </div>
 
         <div className="flex flex-col gap-1.5">
@@ -283,6 +298,28 @@ export function PartRequestFormDialog({ open, onClose }: PartRequestFormDialogPr
               toast(error instanceof Error ? error.message : 'خطا', 'error');
             } finally {
               setIsCreatingBrand(false);
+            }
+          }}
+        />
+
+        <PromptDialog
+          open={isPartPromptOpen}
+          title="افزودن قطعه جدید"
+          label="نام قطعه"
+          placeholder="مثلاً: تاچ"
+          isPending={isCreatingPart}
+          onClose={() => setIsPartPromptOpen(false)}
+          onSubmit={async (name) => {
+            setIsCreatingPart(true);
+            try {
+              const created = await quickCreate.createPart(name);
+              setPartId(created.id);
+              toast('قطعه افزوده شد');
+              setIsPartPromptOpen(false);
+            } catch (error) {
+              toast(error instanceof Error ? error.message : 'خطا', 'error');
+            } finally {
+              setIsCreatingPart(false);
             }
           }}
         />
