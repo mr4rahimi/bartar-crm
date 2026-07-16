@@ -6,36 +6,29 @@ import { Dialog } from '@/shared/components/ui/dialog';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
-import { Select } from '@/shared/components/ui/select';
 import { Textarea } from '@/shared/components/ui/textarea';
 import { useToast } from '@/shared/components/providers/toast-provider';
 import { normalizeDigits } from '@/shared/lib/normalize';
 import type { PartRequestDto } from '@/features/part-requests/types/part-request.types';
-import { useVendors, useRegisterPurchase } from '../hooks/use-purchases';
+import { useRegisterPurchase } from '../hooks/use-purchases';
+import { VendorPicker, type VendorSelection } from './vendor-picker';
 
 type PurchaseFormDialogProps = {
   request: PartRequestDto | null;
   onClose: () => void;
 };
 
-const NEW_VENDOR = '__new__';
-
 export function PurchaseFormDialog({ request, onClose }: PurchaseFormDialogProps) {
   const { toast } = useToast();
-  const vendors = useVendors();
   const registerPurchase = useRegisterPurchase();
 
-  const [vendorId, setVendorId] = useState('');
-  const [vendorName, setVendorName] = useState('');
-  const [vendorPhone, setVendorPhone] = useState('');
+  const [vendor, setVendor] = useState<VendorSelection>(null);
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
 
   useEffect(() => {
     if (!request) return;
-    setVendorId('');
-    setVendorName('');
-    setVendorPhone('');
+    setVendor(null);
     setPrice('');
     setDescription('');
   }, [request]);
@@ -48,18 +41,22 @@ export function PurchaseFormDialog({ request, onClose }: PurchaseFormDialogProps
     request.announcedPrice !== null && numericPrice > request.announcedPrice;
 
   const handleSubmit = () => {
-    if (!vendorId) {
-      toast('فروشنده را انتخاب کنید', 'error');
+    if (!vendor) {
+      toast('فروشنده را انتخاب کنید یا بسازید', 'error');
+      return;
+    }
+    if (vendor.kind === 'new' && vendor.name.trim().length < 2) {
+      toast('نام فروشنده را وارد کنید', 'error');
       return;
     }
 
     registerPurchase.mutate(
       {
         partRequestId: request.id,
-        vendorId: vendorId === NEW_VENDOR ? undefined : vendorId,
+        vendorId: vendor.kind === 'existing' ? vendor.id : undefined,
         newVendor:
-          vendorId === NEW_VENDOR
-            ? { name: vendorName, phone: vendorPhone.trim() || undefined }
+          vendor.kind === 'new'
+            ? { name: vendor.name.trim(), phone: vendor.phone.trim() || undefined }
             : undefined,
         price,
         description: description.trim() || undefined,
@@ -87,33 +84,7 @@ export function PurchaseFormDialog({ request, onClose }: PurchaseFormDialogProps
             ` — قیمت اعلامی: ${request.announcedPrice.toLocaleString('fa-IR')} تومان`}
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="vendor">فروشنده</Label>
-          <Select id="vendor" value={vendorId} onChange={(event) => setVendorId(event.target.value)}>
-            <option value="">انتخاب کنید…</option>
-            {vendors.data?.map((vendor) => (
-              <option key={vendor.id} value={vendor.id}>{vendor.name}</option>
-            ))}
-            <option value={NEW_VENDOR}>+ فروشنده جدید</option>
-          </Select>
-        </div>
-
-        {vendorId === NEW_VENDOR && (
-          <div className="space-y-2.5 rounded-md border border-border bg-background p-3">
-            <Input
-              placeholder="نام فروشنده"
-              value={vendorName}
-              onChange={(event) => setVendorName(event.target.value)}
-            />
-            <Input
-              dir="ltr"
-              className="text-right"
-              placeholder="موبایل (اختیاری)"
-              value={vendorPhone}
-              onChange={(event) => setVendorPhone(event.target.value)}
-            />
-          </div>
-        )}
+        <VendorPicker value={vendor} onChange={setVendor} />
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="purchasePrice">قیمت خرید (تومان)</Label>
