@@ -15,6 +15,7 @@ import { cn } from '@/shared/lib/cn';
 import { useCreatePartRequest } from '../hooks/use-part-request-mutations';
 import { usePartOptions } from '../hooks/use-part-requests';
 import { useTaxonomy, useCreateModel } from '../hooks/use-taxonomy';
+import { useQuickCreate } from '../hooks/use-quick-create';
 import { QUALITY_LABELS } from '../constants/state-machine.constants';
 
 type PartRequestFormDialogProps = { open: boolean; onClose: () => void };
@@ -25,6 +26,7 @@ export function PartRequestFormDialog({ open, onClose }: PartRequestFormDialogPr
   const { toast } = useToast();
   const createRequest = useCreatePartRequest();
   const createModel = useCreateModel();
+  const quickCreate = useQuickCreate();
   const partOptions = usePartOptions();
   const taxonomy = useTaxonomy();
 
@@ -152,16 +154,35 @@ export function PartRequestFormDialog({ open, onClose }: PartRequestFormDialogPr
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="brand">برند</Label>
-            <Select
-              id="brand"
-              value={brandId}
-              onChange={(event) => { setBrandId(event.target.value); setModelName(''); }}
-            >
-              <option value="">انتخاب کنید…</option>
-              {taxonomy.data?.brands.map((brand) => (
-                <option key={brand.id} value={brand.id}>{brand.name}</option>
-              ))}
-            </Select>
+            <div className="flex gap-1.5">
+              <Select
+                id="brand"
+                value={brandId}
+                onChange={(event) => { setBrandId(event.target.value); setModelName(''); }}
+              >
+                <option value="">انتخاب کنید…</option>
+                {taxonomy.data?.brands.map((brand) => (
+                  <option key={brand.id} value={brand.id}>{brand.name}</option>
+                ))}
+              </Select>
+              <button
+                type="button"
+                title="افزودن برند جدید"
+                onClick={async () => {
+                  const name = window.prompt('نام برند جدید:');
+                  if (!name?.trim()) return;
+                  try {
+                    const created = await quickCreate.createBrand(name.trim());
+                    setBrandId(created.id);
+                  } catch (error) {
+                    toast(error instanceof Error ? error.message : 'خطا', 'error');
+                  }
+                }}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-border bg-card text-lg font-bold text-primary"
+              >
+                +
+              </button>
+            </div>
           </div>
         </div>
 
