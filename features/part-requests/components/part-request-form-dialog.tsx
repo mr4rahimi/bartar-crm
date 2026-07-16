@@ -16,6 +16,7 @@ import { useCreatePartRequest } from '../hooks/use-part-request-mutations';
 import { usePartOptions } from '../hooks/use-part-requests';
 import { useTaxonomy, useCreateModel } from '../hooks/use-taxonomy';
 import { useQuickCreate } from '../hooks/use-quick-create';
+import { PromptDialog } from '@/shared/components/ui/prompt-dialog';
 import { QUALITY_LABELS } from '../constants/state-machine.constants';
 
 type PartRequestFormDialogProps = { open: boolean; onClose: () => void };
@@ -27,6 +28,8 @@ export function PartRequestFormDialog({ open, onClose }: PartRequestFormDialogPr
   const createRequest = useCreatePartRequest();
   const createModel = useCreateModel();
   const quickCreate = useQuickCreate();
+  const [isBrandPromptOpen, setIsBrandPromptOpen] = useState(false);
+  const [isCreatingBrand, setIsCreatingBrand] = useState(false);
   const partOptions = usePartOptions();
   const taxonomy = useTaxonomy();
 
@@ -168,16 +171,7 @@ export function PartRequestFormDialog({ open, onClose }: PartRequestFormDialogPr
               <button
                 type="button"
                 title="افزودن برند جدید"
-                onClick={async () => {
-                  const name = window.prompt('نام برند جدید:');
-                  if (!name?.trim()) return;
-                  try {
-                    const created = await quickCreate.createBrand(name.trim());
-                    setBrandId(created.id);
-                  } catch (error) {
-                    toast(error instanceof Error ? error.message : 'خطا', 'error');
-                  }
-                }}
+                onClick={() => setIsBrandPromptOpen(true)}
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-border bg-card text-lg font-bold text-primary"
               >
                 +
@@ -269,6 +263,29 @@ export function PartRequestFormDialog({ open, onClose }: PartRequestFormDialogPr
             onChange={(event) => setDescription(event.target.value)}
           />
         </div>
+
+        <PromptDialog
+          open={isBrandPromptOpen}
+          title="افزودن برند جدید"
+          label="نام برند"
+          placeholder="مثلاً: Nokia"
+          isPending={isCreatingBrand}
+          onClose={() => setIsBrandPromptOpen(false)}
+          onSubmit={async (name) => {
+            setIsCreatingBrand(true);
+            try {
+              const created = await quickCreate.createBrand(name);
+              setBrandId(created.id);
+              setModelName('');
+              toast('برند افزوده شد');
+              setIsBrandPromptOpen(false);
+            } catch (error) {
+              toast(error instanceof Error ? error.message : 'خطا', 'error');
+            } finally {
+              setIsCreatingBrand(false);
+            }
+          }}
+        />
 
         <Button onClick={handleSubmit} disabled={isPending}>
           {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
