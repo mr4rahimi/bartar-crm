@@ -5,6 +5,7 @@ import { SESSION_COOKIE_NAME } from '@/features/authentication/constants/session
 // نکته: Middleware روی Edge Runtime اجرا می‌شود و Prisma در دسترس نیست.
 // اینجا فقط «وجود» کوکی چک می‌شود؛ اعتبارسنجی واقعی Session در
 // getCurrentUser و Route Handlerها (Server Runtime) انجام می‌شود.
+// مسیرهای عمومی (/, /prices, /auth/*) اصلاً وارد matcher نمی‌شوند.
 export function middleware(request: NextRequest) {
   const hasSessionCookie = request.cookies.has(SESSION_COOKIE_NAME);
 
@@ -17,14 +18,16 @@ export function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
+// فقط مسیرهای پشت لاگین — بقیه (لندینگ و صفحه عمومی قیمت‌ها) آزادند
 export const config = {
   matcher: [
     '/dashboard/:path*',
-    '/users/:path*',
-    '/roles/:path*',
     '/part-requests/:path*',
     '/purchases/:path*',
+    '/pricing/:path*',
     '/repairs/:path*',
+    '/users/:path*',
+    '/roles/:path*',
     '/settings/:path*',
   ],
 };
