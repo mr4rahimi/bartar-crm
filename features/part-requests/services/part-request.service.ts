@@ -4,7 +4,7 @@ import {
   createPartRequest,
   transitionPartRequest,
 } from '../repositories/part-request.repository';
-import { upsertPartByName, listParts } from '../repositories/part.repository';
+import { findPartById, listParts } from '../repositories/part.repository';
 import { findActionDef } from '../constants/state-machine.constants';
 import { PART_REQUEST_STATUS_LABELS } from '@/shared/constants/part-request-status';
 import { getModelForLinking } from '@/features/pricing/services/taxonomy.service';
@@ -43,7 +43,8 @@ export async function createPartRequestService(
   input: CreatePartRequestInput,
   context: ActorContext,
 ) {
-  const part = await upsertPartByName(input.partName);
+  const part = await findPartById(input.partId);
+  if (!part) throw new NotFoundError('قطعه انتخاب‌شده یافت نشد');
 
   // اتصال به تاکسونومی: نام برند/مدل برای نمایش از تاکسونومی denormalize می‌شود
   const linkedModel = input.modelId ? await getModelForLinking(input.modelId) : null;

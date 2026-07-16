@@ -7,11 +7,6 @@ export async function listParts() {
   });
 }
 
-// قطعه با ورود آزاد نام — اگر نبود ساخته می‌شود
-export async function upsertPartByName(name: string) {
-  return prisma.part.upsert({
-    where: { name },
-    update: {},
-    create: { name },
-  });
+export async function findPartById(partId: string) {
+  return prisma.part.findFirst({ where: { id: partId, deletedAt: null } });
 }

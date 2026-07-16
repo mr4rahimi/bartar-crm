@@ -8,7 +8,8 @@ export const createPartRequestSchema = z.object({
     .trim()
     .min(1, 'شماره پذیرش را وارد کنید')
     .transform(normalizeDigits),
-  partName: z.string().trim().min(2, 'نام قطعه باید حداقل ۲ کاراکتر باشد'),
+  /** قطعه فقط از کاتالوگ انتخاب می‌شود (جلوگیری از تکرار/غلط املایی) */
+  partId: z.string().min(1, 'قطعه را انتخاب کنید'),
   quality: z.enum(['ORIGINAL', 'HIGH_COPY', 'COPY']),
   quantity: positiveIntField('تعداد معتبر نیست').default(1),
   /** اتصال به تاکسونومی قیمت‌گذاری (docs/15) — لازمه‌ی Auto-Pricing */
