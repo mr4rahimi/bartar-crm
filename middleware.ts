@@ -25,6 +25,7 @@ export const config = {
     '/part-requests/:path*',
     '/purchases/:path*',
     '/pricing/:path*',
+    '/catalog/:path*',
     '/repairs/:path*',
     '/users/:path*',
     '/roles/:path*',

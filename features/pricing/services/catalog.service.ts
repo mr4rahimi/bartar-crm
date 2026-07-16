@@ -1,4 +1,5 @@
 import {
+  listModels,
   listDeviceTypes,
   findDeviceTypeByName,
   createDeviceType,
@@ -47,7 +48,7 @@ export async function getCatalogService() {
   const [deviceTypes, brands, models, parts] = await Promise.all([
     listDeviceTypes(),
     listBrands(),
-    (await import('../repositories/taxonomy.repository')).listModels(),
+    listModels(),
     listAllParts(),
   ]);
 

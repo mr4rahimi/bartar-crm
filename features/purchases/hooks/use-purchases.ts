@@ -41,6 +41,9 @@ function useInvalidatePurchasing() {
     queryClient.invalidateQueries({ queryKey: ['purchase-queue'] });
     queryClient.invalidateQueries({ queryKey: ['purchases'] });
     queryClient.invalidateQueries({ queryKey: ['part-requests'] });
+    // Auto-Pricing قیمت‌ها را تغییر می‌دهد — لیست قیمت و بنر بازبینی هم تازه شوند
+    queryClient.invalidateQueries({ queryKey: ['price-list'] });
+    queryClient.invalidateQueries({ queryKey: ['prices-review'] });
   };
 }
 
