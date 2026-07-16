@@ -6,6 +6,7 @@ import type { PartQuality } from '@prisma/client';
 import { Dialog } from '@/shared/components/ui/dialog';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
+import { PriceInput } from '@/shared/components/ui/price-input';
 import { Label } from '@/shared/components/ui/label';
 import { Select } from '@/shared/components/ui/select';
 import { Textarea } from '@/shared/components/ui/textarea';
@@ -252,12 +253,11 @@ export function PartRequestFormDialog({ open, onClose }: PartRequestFormDialogPr
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="announcedPrice">قیمت اعلامی به مشتری (تومان — اختیاری)</Label>
-          <Input
+          <PriceInput
             id="announcedPrice"
-            inputMode="numeric"
-            placeholder="مثلاً: 2500000"
+            placeholder="مثلاً: ۲٬۵۰۰٬۰۰۰"
             value={announcedPrice}
-            onChange={(event) => setAnnouncedPrice(event.target.value)}
+            onChange={setAnnouncedPrice}
           />
           <p className="text-[11px] text-muted-foreground">
             در صورت وارد کردن قیمت، درخواست مستقیم به «در انتظار تایید مشتری» می‌رود.

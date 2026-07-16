@@ -5,6 +5,7 @@ import { Loader2, TriangleAlert } from 'lucide-react';
 import { Dialog } from '@/shared/components/ui/dialog';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
+import { PriceInput } from '@/shared/components/ui/price-input';
 import { Label } from '@/shared/components/ui/label';
 import { Textarea } from '@/shared/components/ui/textarea';
 import { useToast } from '@/shared/components/providers/toast-provider';
@@ -88,12 +89,11 @@ export function PurchaseFormDialog({ request, onClose }: PurchaseFormDialogProps
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="purchasePrice">قیمت خرید (تومان)</Label>
-          <Input
+          <PriceInput
             id="purchasePrice"
-            inputMode="numeric"
-            placeholder="مثلاً: 1700000"
+            placeholder="مثلاً: ۱٬۷۰۰٬۰۰۰"
             value={price}
-            onChange={(event) => setPrice(event.target.value)}
+            onChange={setPrice}
           />
         </div>
 

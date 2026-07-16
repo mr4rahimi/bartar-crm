@@ -6,6 +6,7 @@ import type { PartQuality } from '@prisma/client';
 import { Dialog } from '@/shared/components/ui/dialog';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
+import { PriceInput } from '@/shared/components/ui/price-input';
 import { Label } from '@/shared/components/ui/label';
 import { Select } from '@/shared/components/ui/select';
 import { useToast } from '@/shared/components/providers/toast-provider';
@@ -132,18 +133,16 @@ export function PriceEditDialog({ open, row, onClose }: PriceEditDialogProps) {
               <div className="grid grid-cols-2 gap-2">
                 <div className="flex flex-col gap-1">
                   <Label className="text-[11px]">قیمت فروش</Label>
-                  <Input
-                    inputMode="numeric"
+                  <PriceInput
                     value={fields[quality].sell}
-                    onChange={(event) => setField(quality, 'sell', event.target.value)}
+                    onChange={(raw) => setField(quality, 'sell', raw)}
                   />
                 </div>
                 <div className="flex flex-col gap-1">
                   <Label className="text-[11px]">قیمت خرید</Label>
-                  <Input
-                    inputMode="numeric"
+                  <PriceInput
                     value={fields[quality].buy}
-                    onChange={(event) => setField(quality, 'buy', event.target.value)}
+                    onChange={(raw) => setField(quality, 'buy', raw)}
                   />
                 </div>
               </div>
