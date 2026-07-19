@@ -7,6 +7,7 @@ import {
   Wrench,
   Users,
   ShieldCheck,
+  Info,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -29,4 +30,5 @@ export const NAV_ITEMS: NavItem[] = [
   { href: '/repairs', label: 'پذیرش', icon: Wrench, permission: 'VIEW_REPAIR' },
   { href: '/users', label: 'کاربران', icon: Users, permission: 'VIEW_USER' },
   { href: '/roles', label: 'نقش‌ها', icon: ShieldCheck, permission: 'ASSIGN_ROLE' },
+  { href: '/about', label: 'نسخه و تغییرات', icon: Info, permission: 'VIEW_SETTINGS' },
 ];

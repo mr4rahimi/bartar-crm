@@ -30,5 +30,6 @@ export const config = {
     '/users/:path*',
     '/roles/:path*',
     '/settings/:path*',
+    '/about/:path*',
   ],
 };

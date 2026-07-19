@@ -6,6 +6,7 @@ import type { ReactNode } from 'react';
 import { cn } from '@/shared/lib/cn';
 import type { NavItem } from '@/shared/constants/navigation';
 import { ThemeToggle } from '@/shared/components/theme-toggle';
+import { APP_VERSION } from '@/shared/constants/changelog';
 
 type SidebarProps = {
   items: NavItem[];
@@ -51,7 +52,10 @@ export function Sidebar({ items, userName, logoutSlot }: SidebarProps) {
 
       <div className="space-y-3 border-t border-border p-4">
         <ThemeToggle />
-        <div className="text-sm font-semibold">{userName}</div>
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-semibold">{userName}</span>
+          <span className="text-[10.5px] font-bold text-muted-foreground">v{APP_VERSION}</span>
+        </div>
         {logoutSlot}
       </div>
     </aside>
