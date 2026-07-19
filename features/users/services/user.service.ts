@@ -51,6 +51,7 @@ export async function createUserService(input: CreateUserInput, context: ActorCo
     email: input.email ?? null,
     passwordHash,
     isActive: input.isActive,
+    smsEnabled: input.smsEnabled,
     roleIds: input.roleIds,
   });
 
@@ -97,6 +98,7 @@ export async function updateUserService(
     email: input.email,
     passwordHash,
     isActive: input.isActive,
+    smsEnabled: input.smsEnabled,
   });
 
   if (input.roleIds) {

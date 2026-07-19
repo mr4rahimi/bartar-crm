@@ -9,6 +9,7 @@ export type UserDto = {
   phone: string;
   email: string | null;
   isActive: boolean;
+  smsEnabled: boolean;
   roles: UserRoleDto[];
   createdAt: Date;
 };

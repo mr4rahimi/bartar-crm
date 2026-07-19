@@ -7,6 +7,7 @@ export const createUserSchema = z.object({
   email: z.string().email('ایمیل معتبر نیست').optional(),
   password: z.string().min(6, 'رمز عبور باید حداقل ۶ کاراکتر باشد'),
   isActive: z.boolean().default(true),
+  smsEnabled: z.boolean().default(true),
   roleIds: z.array(z.string().min(1)).min(1, 'حداقل یک نقش انتخاب کنید'),
 });
 

@@ -7,6 +7,7 @@ export const updateUserSchema = z.object({
   email: z.string().email('ایمیل معتبر نیست').nullable().optional(),
   password: z.string().min(6, 'رمز عبور باید حداقل ۶ کاراکتر باشد').optional(),
   isActive: z.boolean().optional(),
+  smsEnabled: z.boolean().optional(),
   roleIds: z.array(z.string().min(1)).min(1, 'حداقل یک نقش انتخاب کنید').optional(),
 });
 

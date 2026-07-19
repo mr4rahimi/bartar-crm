@@ -27,6 +27,7 @@ model User {
   email        String? @unique
   passwordHash String
   isActive     Boolean @default(true)
+  smsEnabled   Boolean @default(true)
 
   roles               UserRole[]
   createdRepairs      RepairTicket[]  @relation("RepairTicketCreatedBy")
@@ -426,6 +427,17 @@ model Attachment {
 // Notification (Internal) — 12-PRD.md Current Scope
 // -------------------------------------------------------------
 
+enum NotificationChannel {
+  IN_APP
+  SMS
+}
+
+enum NotificationStatus {
+  SENT
+  FAILED
+  SKIPPED
+}
+
 model Notification {
   id      String  @id @default(cuid())
   userId  String
@@ -434,10 +446,21 @@ model Notification {
   isRead  Boolean @default(false)
   type    String?
 
+  // کانال SMS — docs/17-notifications.md
+  channel     NotificationChannel @default(IN_APP)
+  status      NotificationStatus  @default(SENT)
+  recipient   String?
+  patternCode String?
+  providerRef String?
+  error       String?
+  entityType  String?
+  entityId    String?
+
   user User @relation(fields: [userId], references: [id])
 
   createdAt DateTime @default(now())
 
+  @@index([entityType, entityId])
   @@map("notifications")
 }
 

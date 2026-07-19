@@ -8,6 +8,7 @@ import { findPartById, listParts } from '../repositories/part.repository';
 import { findActionDef } from '../constants/state-machine.constants';
 import { PART_REQUEST_STATUS_LABELS } from '@/shared/constants/part-request-status';
 import { getModelForLinking } from '@/features/pricing/services/taxonomy.service';
+import { notifyPartRequestEventAsync } from '@/features/notifications/services/notification.service';
 import { logActivity } from '@/features/activity-logs/services/log-activity.service';
 import { AppError, NotFoundError } from '@/shared/lib/errors';
 import { toPartRequestDto, toPartRequestDetailDto } from '../utils/part-request.mapper';
@@ -99,7 +100,19 @@ export async function createPartRequestService(
     device: context.device,
   });
 
-  return getPartRequestService(request.id);
+  const created = await getPartRequestService(request.id);
+
+  notifyPartRequestEventAsync({
+    requestId: created.id,
+    status: created.status,
+    receptionNumber: created.receptionNumber,
+    partName: created.partName,
+    modelName: created.model,
+    announcedPrice: created.announcedPrice,
+    createdById: context.actorId,
+  });
+
+  return created;
 }
 
 export async function applyPartRequestActionService(
@@ -159,7 +172,19 @@ export async function applyPartRequestActionService(
     device: context.device,
   });
 
-  return getPartRequestService(requestId);
+  const updated = await getPartRequestService(requestId);
+
+  notifyPartRequestEventAsync({
+    requestId: updated.id,
+    status: updated.status,
+    receptionNumber: updated.receptionNumber,
+    partName: updated.partName,
+    modelName: updated.model,
+    announcedPrice: updated.announcedPrice,
+    createdById: request.createdById,
+  });
+
+  return updated;
 }
 
 // ----- گذارهای سیستمیِ خرید — فقط از طریق Service فیچر purchases فراخوانی می‌شوند -----
@@ -199,6 +224,16 @@ export async function markPartRequestPurchased(
     description,
   });
 
+  notifyPartRequestEventAsync({
+    requestId,
+    status: 'PURCHASED',
+    receptionNumber: request.receptionNumber,
+    partName: request.part.name,
+    modelName: request.model,
+    announcedPrice: request.announcedPrice,
+    createdById: request.createdById,
+  });
+
   return request;
 }
 
@@ -224,6 +259,16 @@ export async function markPartRequestReturned(
     newStatus: 'RETURNED',
     changedById: context.actorId,
     description,
+  });
+
+  notifyPartRequestEventAsync({
+    requestId,
+    status: 'RETURNED',
+    receptionNumber: request.receptionNumber,
+    partName: request.part.name,
+    modelName: request.model,
+    announcedPrice: request.announcedPrice,
+    createdById: request.createdById,
   });
 
   return request;

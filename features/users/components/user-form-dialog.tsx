@@ -51,11 +51,13 @@ export function UserFormDialog({ open, user, onClose }: UserFormDialogProps) {
       email: user?.email ?? '',
       password: '',
       isActive: user?.isActive ?? true,
+      smsEnabled: user?.smsEnabled ?? true,
       roleIds: user?.roles.map((role) => role.id) ?? [],
     });
   }, [open, user, reset]);
 
   const isActive = watch('isActive');
+  const smsEnabled = watch('smsEnabled');
   const selectedRoleIds = watch('roleIds') ?? [];
 
   const toggleRole = (roleId: string) => {
@@ -72,6 +74,7 @@ export function UserFormDialog({ open, user, onClose }: UserFormDialogProps) {
       email: values.email === '' ? undefined : values.email,
       password: values.password === '' ? undefined : values.password,
       isActive: values.isActive,
+      smsEnabled: values.smsEnabled,
       roleIds: values.roleIds,
     };
 
@@ -156,6 +159,15 @@ export function UserFormDialog({ open, user, onClose }: UserFormDialogProps) {
             id="isActive"
             checked={isActive ?? true}
             onCheckedChange={(checked) => setValue('isActive', checked)}
+          />
+        </div>
+
+        <div className="flex items-center justify-between rounded-md border border-border bg-background px-3.5 py-3">
+          <Label htmlFor="smsEnabled">دریافت پیامک اطلاع‌رسانی</Label>
+          <Switch
+            id="smsEnabled"
+            checked={smsEnabled ?? true}
+            onCheckedChange={(checked) => setValue('smsEnabled', checked)}
           />
         </div>
 

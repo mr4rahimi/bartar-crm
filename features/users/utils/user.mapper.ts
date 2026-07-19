@@ -11,6 +11,7 @@ export function toUserDto(user: UserWithRoles): UserDto {
     phone: user.phone,
     email: user.email,
     isActive: user.isActive,
+    smsEnabled: user.smsEnabled,
     roles: user.roles.map((userRole) => ({ id: userRole.role.id, name: userRole.role.name })),
     createdAt: user.createdAt,
   };

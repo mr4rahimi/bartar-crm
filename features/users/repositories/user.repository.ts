@@ -53,6 +53,7 @@ export type CreateUserData = {
   email: string | null;
   passwordHash: string;
   isActive: boolean;
+  smsEnabled: boolean;
   roleIds: string[];
 };
 
@@ -69,6 +70,7 @@ export type UpdateUserData = {
   email?: string | null;
   passwordHash?: string;
   isActive?: boolean;
+  smsEnabled?: boolean;
 };
 
 export async function updateUser(userId: string, data: UpdateUserData) {
