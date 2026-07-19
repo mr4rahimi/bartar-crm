@@ -1,18 +1,12 @@
 import {
   listTickets,
   findTicketById,
-  findLastTicketNumber,
-  createTicket,
+  findTicketByToken,
+  createTicketWithRelations,
+  nextTicketNumber,
 } from '../repositories/ticket.repository';
-import {
-  findCustomerById,
-  createCustomer,
-} from '../repositories/customer.repository';
-import {
-  listBrandsWithModels,
-  upsertBrandAndModel,
-  createDevice,
-} from '../repositories/catalog.repository';
+import { createCustomerService } from './customer.service';
+import { findCustomerById } from '../repositories/customer.repository';
 import { logActivity } from '@/features/activity-logs/services/log-activity.service';
 import { NotFoundError } from '@/shared/lib/errors';
 import { toTicketDto } from '../utils/ticket.mapper';
@@ -20,15 +14,6 @@ import type { CreateTicketInput } from '../validators/create-ticket.schema';
 import type { TicketQueryInput } from '../validators/ticket-query.schema';
 
 type ActorContext = { actorId: string; ip?: string | null; device?: string | null };
-
-const FIRST_TICKET_NUMBER = 1001;
-
-async function nextTicketNumber(): Promise<string> {
-  const last = await findLastTicketNumber();
-  const lastNumber = last ? parseInt(last, 10) : FIRST_TICKET_NUMBER - 1;
-  const base = Number.isNaN(lastNumber) ? FIRST_TICKET_NUMBER - 1 : lastNumber;
-  return String(base + 1);
-}
 
 export async function listTicketsService(query: TicketQueryInput) {
   const { items, total } = await listTickets({
@@ -43,52 +28,50 @@ export async function listTicketsService(query: TicketQueryInput) {
 
 export async function getTicketService(ticketId: string) {
   const ticket = await findTicketById(ticketId);
-  if (!ticket) throw new NotFoundError('تیکت تعمیر یافت نشد');
+  if (!ticket) throw new NotFoundError('قبض پذیرش یافت نشد');
   return toTicketDto(ticket);
 }
 
-export async function listCatalogService() {
-  const brands = await listBrandsWithModels();
-  return brands.map((brand) => ({
-    id: brand.id,
-    name: brand.name,
-    models: brand.models.map((model) => ({ id: model.id, name: model.name })),
-  }));
+/** رسید عمومی مشتری — بدون احراز هویت */
+export async function getPublicTicketService(publicToken: string) {
+  const ticket = await findTicketByToken(publicToken);
+  if (!ticket) throw new NotFoundError('رسید یافت نشد');
+  return toTicketDto(ticket);
 }
 
 export async function createTicketService(input: CreateTicketInput, context: ActorContext) {
-  // ۱) مشتری: موجود یا ساخت سریع
+  // ۱) مشتری: موجود یا ثبت جدید
   let customerId: string;
   if (input.customerId) {
     const customer = await findCustomerById(input.customerId);
-    if (!customer) throw new NotFoundError('مشتری انتخاب‌شده یافت نشد');
+    if (!customer) throw new NotFoundError('مشتری یافت نشد');
     customerId = customer.id;
   } else {
-    const customer = await createCustomer(input.newCustomer!);
+    const customer = await createCustomerService(input.newCustomer!, context);
     customerId = customer.id;
   }
 
-  // ۲) برند/مدل (Upsert) و دستگاه
-  const { brand, model } = await upsertBrandAndModel(input.brandName, input.modelName);
-  const device = await createDevice({
-    brandId: brand.id,
-    modelId: model.id,
-    serial: input.serial || null,
-  });
-
-  // ۳) تیکت با شماره‌ی یکتا — یک‌بار Retry برای برخورد همزمانی
+  // ۲) تیکت با شماره یکتا — یک‌بار Retry برای برخورد همزمانی
   const data = {
     customerId,
-    deviceId: device.id,
-    issueDescription: input.issueDescription || null,
+    brandId: input.brandId,
+    modelId: input.modelId,
+    serial: input.serial || null,
+    devicePassword: input.devicePassword || null,
+    estimatedCost: input.estimatedCost ?? null,
+    estimatedDeliveryAt: input.estimatedDeliveryAt ? new Date(input.estimatedDeliveryAt) : null,
+    technicianNotes: input.technicianNotes || null,
+    customerNotes: input.customerNotes || null,
     createdById: context.actorId,
+    accessoryIds: input.accessoryIds,
+    issueIds: input.issueIds,
   };
 
   let ticket;
   try {
-    ticket = await createTicket({ ...data, ticketNumber: await nextTicketNumber() });
+    ticket = await createTicketWithRelations({ ...data, ticketNumber: await nextTicketNumber() });
   } catch {
-    ticket = await createTicket({ ...data, ticketNumber: await nextTicketNumber() });
+    ticket = await createTicketWithRelations({ ...data, ticketNumber: await nextTicketNumber() });
   }
 
   await logActivity({
@@ -99,8 +82,8 @@ export async function createTicketService(input: CreateTicketInput, context: Act
     newValue: {
       ticketNumber: ticket.ticketNumber,
       customerId,
-      brand: brand.name,
-      model: model.name,
+      device: `${ticket.device.brand.name} ${ticket.device.model.name}`,
+      issues: ticket.issues.length,
     },
     ip: context.ip,
     device: context.device,

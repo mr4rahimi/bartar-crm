@@ -9,8 +9,8 @@ import { Badge } from '@/shared/components/ui/badge';
 import { Skeleton } from '@/shared/components/ui/skeleton';
 import { useDebouncedValue } from '@/shared/hooks/use-debounced-value';
 import { cn } from '@/shared/lib/cn';
+import Link from 'next/link';
 import { useTickets } from '../hooks/use-tickets';
-import { TicketFormDialog } from './ticket-form-dialog';
 import {
   TICKET_STATUS_LABELS,
   TICKET_STATUS_VARIANTS,
@@ -29,7 +29,6 @@ export function RepairsView() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<RepairTicketStatus | 'all'>('all');
   const [page, setPage] = useState(1);
-  const [isFormOpen, setIsFormOpen] = useState(false);
 
   const debouncedSearch = useDebouncedValue(search);
 
@@ -45,10 +44,13 @@ export function RepairsView() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-extrabold">پذیرش / تعمیرات</h1>
-        <Button className="h-10 w-auto px-4 text-[13px]" onClick={() => setIsFormOpen(true)}>
+        <Link
+          href="/repairs/new"
+          className="inline-flex h-10 items-center gap-1.5 rounded-md bg-primary px-4 text-[13px] font-bold text-primary-foreground"
+        >
           <Plus className="h-4 w-4" />
-          پذیرش جدید
-        </Button>
+          قبض پذیرش جدید
+        </Link>
       </div>
 
       <div className="relative">
@@ -89,9 +91,12 @@ export function RepairsView() {
         <div className="flex flex-col items-center gap-2 rounded-lg border border-border bg-card py-12">
           <Wrench className="h-8 w-8 text-muted-foreground" />
           <p className="text-sm font-semibold text-muted-foreground">تیکتی یافت نشد</p>
-          <Button className="h-9 w-auto px-4 text-xs" onClick={() => setIsFormOpen(true)}>
+          <Link
+            href="/repairs/new"
+            className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-xs font-bold text-primary-foreground"
+          >
             ثبت اولین پذیرش
-          </Button>
+          </Link>
         </div>
       )}
 
@@ -145,7 +150,6 @@ export function RepairsView() {
         </div>
       )}
 
-      <TicketFormDialog open={isFormOpen} onClose={() => setIsFormOpen(false)} />
     </div>
   );
 }

@@ -4,28 +4,11 @@ import {
   requirePermission,
 } from '@/features/authentication/services/authorize.service';
 import { PERMISSIONS } from '@/features/permissions/constants/permission-codes.constants';
-import { customerInputSchema } from '@/features/repairs/validators/customer.schema';
-import {
-  searchCustomersService,
-  createCustomerService,
-} from '@/features/repairs/services/customer.service';
+import { catalogItemSchema } from '@/features/repairs/validators/catalog-item.schema';
+import { createIssueService } from '@/features/repairs/services/reception-catalog.service';
 import { apiSuccess, apiError, zodIssues } from '@/shared/lib/api-response';
 import { handleApiError } from '@/shared/lib/handle-api-error';
 import { requestContext } from '@/shared/lib/request-context';
-
-export async function GET(request: NextRequest) {
-  try {
-    const actor = await authenticateRequest(request);
-    requirePermission(actor, PERMISSIONS.VIEW_REPAIR.code);
-
-    const term = request.nextUrl.searchParams.get('search')?.trim() ?? '';
-    if (term.length < 2) return apiSuccess([]);
-
-    return apiSuccess(await searchCustomersService(term));
-  } catch (error) {
-    return handleApiError(error, '[api/v1/customers GET]');
-  }
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,16 +16,16 @@ export async function POST(request: NextRequest) {
     requirePermission(actor, PERMISSIONS.CREATE_REPAIR.code);
 
     const body = await request.json().catch(() => null);
-    const parsed = customerInputSchema.safeParse(body);
+    const parsed = catalogItemSchema.safeParse(body);
     if (!parsed.success) return apiError('اطلاعات ورودی معتبر نیست', 400, zodIssues(parsed.error));
 
-    const customer = await createCustomerService(parsed.data, {
+    const issue = await createIssueService(parsed.data, {
       actorId: actor.id,
       ...requestContext(request),
     });
 
-    return apiSuccess(customer, 201);
+    return apiSuccess(issue, 201);
   } catch (error) {
-    return handleApiError(error, '[api/v1/customers POST]');
+    return handleApiError(error, '[api/v1/device-issues POST]');
   }
 }

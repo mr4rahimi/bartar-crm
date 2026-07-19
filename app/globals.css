@@ -48,3 +48,12 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* تقویم شمسی باید بالای دیالوگ‌ها (z-70) و زیر Toast (z-80) بماند */
+.rmdp-container,
+.rmdp-wrapper {
+  z-index: 75 !important;
+}
+.rmdp-input {
+  font-family: inherit !important;
+}
