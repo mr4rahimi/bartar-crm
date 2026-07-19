@@ -50,6 +50,10 @@ export function PurchaseFormDialog({ request, onClose }: PurchaseFormDialogProps
       toast('نام فروشنده را وارد کنید', 'error');
       return;
     }
+    if (numericPrice <= 0) {
+      toast('قیمت خرید را وارد کنید', 'error');
+      return;
+    }
 
     registerPurchase.mutate(
       {

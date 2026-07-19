@@ -6,18 +6,20 @@ import type { PartQuality } from '@prisma/client';
 import { Dialog } from '@/shared/components/ui/dialog';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
-import { PriceInput } from '@/shared/components/ui/price-input';
 import { Label } from '@/shared/components/ui/label';
-import { Select } from '@/shared/components/ui/select';
 import { Textarea } from '@/shared/components/ui/textarea';
 import { Switch } from '@/shared/components/ui/switch';
-import { PromptDialog } from '@/shared/components/ui/prompt-dialog';
+import { PriceInput } from '@/shared/components/ui/price-input';
+import { SearchableSelect } from '@/shared/components/ui/searchable-select';
 import { useToast } from '@/shared/components/providers/toast-provider';
+import { useDebouncedValue } from '@/shared/hooks/use-debounced-value';
 import { cn } from '@/shared/lib/cn';
 import { useCreatePartRequest } from '../hooks/use-part-request-mutations';
 import { usePartOptions } from '../hooks/use-part-requests';
 import { useTaxonomy, useCreateModel } from '../hooks/use-taxonomy';
 import { useQuickCreate } from '../hooks/use-quick-create';
+import { usePriceCheck } from '../hooks/use-price-check';
+import { PriceWarning } from './price-warning';
 import { QUALITY_LABELS } from '../constants/state-machine.constants';
 
 type PartRequestFormDialogProps = { open: boolean; onClose: () => void };
@@ -35,17 +37,13 @@ export function PartRequestFormDialog({ open, onClose }: PartRequestFormDialogPr
   const [receptionNumber, setReceptionNumber] = useState('');
   const [deviceTypeId, setDeviceTypeId] = useState('');
   const [brandId, setBrandId] = useState('');
-  const [modelName, setModelName] = useState('');
+  const [modelId, setModelId] = useState('');
   const [partId, setPartId] = useState('');
   const [quality, setQuality] = useState<PartQuality>('ORIGINAL');
   const [quantity, setQuantity] = useState('1');
   const [announcedPrice, setAnnouncedPrice] = useState('');
   const [isTest, setIsTest] = useState(false);
   const [description, setDescription] = useState('');
-
-  const [isBrandPromptOpen, setIsBrandPromptOpen] = useState(false);
-  const [isCreatingBrand, setIsCreatingBrand] = useState(false);
-  const [isPartPromptOpen, setIsPartPromptOpen] = useState(false);
   const [isCreatingPart, setIsCreatingPart] = useState(false);
 
   useEffect(() => {
@@ -53,7 +51,7 @@ export function PartRequestFormDialog({ open, onClose }: PartRequestFormDialogPr
     setReceptionNumber('');
     setDeviceTypeId('');
     setBrandId('');
-    setModelName('');
+    setModelId('');
     setPartId('');
     setQuality('ORIGINAL');
     setQuantity('1');
@@ -62,23 +60,27 @@ export function PartRequestFormDialog({ open, onClose }: PartRequestFormDialogPr
     setDescription('');
   }, [open]);
 
-  // مدل‌های فیلترشده بر اساس نوع دستگاه و برند انتخابی
   const filteredModels = useMemo(() => {
     if (!taxonomy.data || !brandId) return [];
-    return taxonomy.data.models.filter(
-      (model) =>
-        model.brandId === brandId &&
-        (!deviceTypeId || model.deviceTypeId === deviceTypeId || model.deviceTypeId === null),
-    );
+    return taxonomy.data.models
+      .filter(
+        (model) =>
+          model.brandId === brandId &&
+          (!deviceTypeId || model.deviceTypeId === deviceTypeId || model.deviceTypeId === null),
+      )
+      .map((model) => ({ id: model.id, name: model.name }));
   }, [taxonomy.data, brandId, deviceTypeId]);
 
-  const matchedModel = filteredModels.find(
-    (model) => model.name.trim() === modelName.trim(),
-  );
-  const isNewModel = Boolean(modelName.trim() && brandId && !matchedModel);
+  const debouncedPrice = useDebouncedValue(announcedPrice, 500);
+  const priceCheck = usePriceCheck({
+    modelId: modelId || null,
+    partId,
+    quality,
+    price: debouncedPrice,
+  });
 
-  const handleSubmit = async () => {
-    if (!deviceTypeId || !brandId || !modelName.trim()) {
+  const handleSubmit = () => {
+    if (!deviceTypeId || !brandId || !modelId) {
       toast('نوع دستگاه، برند و مدل را مشخص کنید', 'error');
       return;
     }
@@ -86,41 +88,28 @@ export function PartRequestFormDialog({ open, onClose }: PartRequestFormDialogPr
       toast('قطعه را انتخاب کنید', 'error');
       return;
     }
-
-    try {
-      // مدل موجود نبود → ثبت مدل جدید در لحظه (docs/15-pricing-integration.md)
-      let modelId = matchedModel?.id;
-      if (!modelId) {
-        const created = await createModel.mutateAsync({
-          name: modelName.trim(),
-          deviceTypeId,
-          brandId,
-        });
-        modelId = created.id;
-      }
-
-      createRequest.mutate(
-        {
-          receptionNumber,
-          partId,
-          quality,
-          quantity,
-          modelId,
-          announcedPrice: announcedPrice.trim() || undefined,
-          isTest,
-          description: description.trim() || undefined,
-        },
-        {
-          onSuccess: () => { toast('درخواست قطعه ثبت شد'); onClose(); },
-          onError: (error) => toast(error.message, 'error'),
-        },
-      );
-    } catch (error) {
-      toast(error instanceof Error ? error.message : 'خطا در ثبت مدل', 'error');
+    if (!receptionNumber.trim()) {
+      toast('شماره پذیرش را وارد کنید', 'error');
+      return;
     }
-  };
 
-  const isPending = createRequest.isPending || createModel.isPending;
+    createRequest.mutate(
+      {
+        receptionNumber,
+        partId,
+        quality,
+        quantity,
+        modelId,
+        announcedPrice: announcedPrice.trim() || undefined,
+        isTest,
+        description: description.trim() || undefined,
+      },
+      {
+        onSuccess: () => { toast('درخواست قطعه ثبت شد'); onClose(); },
+        onError: (error) => toast(error.message, 'error'),
+      },
+    );
+  };
 
   return (
     <Dialog open={open} onClose={onClose} title="درخواست قطعه جدید">
@@ -131,7 +120,7 @@ export function PartRequestFormDialog({ open, onClose }: PartRequestFormDialogPr
             <Input
               id="receptionNumber"
               inputMode="numeric"
-              placeholder="مثلاً: 1042"
+              placeholder="مثلاً: 20001"
               value={receptionNumber}
               onChange={(event) => setReceptionNumber(event.target.value)}
             />
@@ -150,84 +139,89 @@ export function PartRequestFormDialog({ open, onClose }: PartRequestFormDialogPr
         <div className="grid grid-cols-2 gap-2.5">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="deviceType">نوع دستگاه</Label>
-            <Select
+            <SearchableSelect
               id="deviceType"
+              items={taxonomy.data?.deviceTypes ?? []}
               value={deviceTypeId}
-              onChange={(event) => { setDeviceTypeId(event.target.value); setModelName(''); }}
-            >
-              <option value="">انتخاب کنید…</option>
-              {taxonomy.data?.deviceTypes.map((type) => (
-                <option key={type.id} value={type.id}>{type.name}</option>
-              ))}
-            </Select>
+              onChange={(id) => { setDeviceTypeId(id); setModelId(''); }}
+            />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="brand">برند</Label>
-            <div className="flex gap-1.5">
-              <Select
-                id="brand"
-                value={brandId}
-                onChange={(event) => { setBrandId(event.target.value); setModelName(''); }}
-              >
-                <option value="">انتخاب کنید…</option>
-                {taxonomy.data?.brands.map((brand) => (
-                  <option key={brand.id} value={brand.id}>{brand.name}</option>
-                ))}
-              </Select>
-              <button
-                type="button"
-                title="افزودن برند جدید"
-                onClick={() => setIsBrandPromptOpen(true)}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-border bg-card text-lg font-bold text-primary"
-              >
-                +
-              </button>
-            </div>
+            <SearchableSelect
+              id="brand"
+              items={taxonomy.data?.brands ?? []}
+              value={brandId}
+              onChange={(id) => { setBrandId(id); setModelId(''); }}
+              createLabel="ثبت برند"
+              onCreate={async (term) => {
+                try {
+                  const created = await quickCreate.createBrand(term);
+                  setBrandId(created.id);
+                  setModelId('');
+                  toast('برند افزوده شد');
+                } catch (error) {
+                  toast(error instanceof Error ? error.message : 'خطا', 'error');
+                }
+              }}
+            />
           </div>
         </div>
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="model">مدل</Label>
-          <Input
+          <SearchableSelect
             id="model"
-            list="model-options"
-            placeholder="جستجو یا ورود مدل جدید…"
-            value={modelName}
+            items={filteredModels}
+            value={modelId}
+            onChange={setModelId}
             disabled={!brandId}
-            onChange={(event) => setModelName(event.target.value)}
+            placeholder={brandId ? 'جستجو یا ثبت مدل…' : 'ابتدا برند را انتخاب کنید'}
+            emptyText="مدلی برای این برند ثبت نشده"
+            isCreating={createModel.isPending}
+            createLabel="ثبت مدل"
+            onCreate={async (term) => {
+              if (!deviceTypeId) {
+                toast('ابتدا نوع دستگاه را انتخاب کنید', 'error');
+                return;
+              }
+              try {
+                const created = await createModel.mutateAsync({
+                  name: term,
+                  deviceTypeId,
+                  brandId,
+                });
+                setModelId(created.id);
+                toast('مدل افزوده شد');
+              } catch (error) {
+                toast(error instanceof Error ? error.message : 'خطا', 'error');
+              }
+            }}
           />
-          <datalist id="model-options">
-            {filteredModels.map((model) => <option key={model.id} value={model.name} />)}
-          </datalist>
-          {isNewModel && (
-            <p className="text-[11px] font-semibold text-accent-foreground">
-              مدل «{modelName.trim()}» جدید است و هنگام ثبت به دسته‌بندی اضافه می‌شود.
-            </p>
-          )}
         </div>
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="partId">قطعه</Label>
-          <div className="flex gap-1.5">
-            <Select
-              id="partId"
-              value={partId}
-              onChange={(event) => setPartId(event.target.value)}
-            >
-              <option value="">انتخاب کنید…</option>
-              {partOptions.data?.map((part) => (
-                <option key={part.id} value={part.id}>{part.name}</option>
-              ))}
-            </Select>
-            <button
-              type="button"
-              title="افزودن قطعه جدید"
-              onClick={() => setIsPartPromptOpen(true)}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-border bg-card text-lg font-bold text-primary"
-            >
-              +
-            </button>
-          </div>
+          <SearchableSelect
+            id="partId"
+            items={partOptions.data ?? []}
+            value={partId}
+            onChange={setPartId}
+            createLabel="ثبت قطعه"
+            isCreating={isCreatingPart}
+            onCreate={async (term) => {
+              setIsCreatingPart(true);
+              try {
+                const created = await quickCreate.createPart(term);
+                setPartId(created.id);
+                toast('قطعه افزوده شد');
+              } catch (error) {
+                toast(error instanceof Error ? error.message : 'خطا', 'error');
+              } finally {
+                setIsCreatingPart(false);
+              }
+            }}
+          />
         </div>
 
         <div className="flex flex-col gap-1.5">
@@ -264,6 +258,8 @@ export function PartRequestFormDialog({ open, onClose }: PartRequestFormDialogPr
           </p>
         </div>
 
+        <PriceWarning check={priceCheck.data} />
+
         <div className="flex items-center justify-between rounded-md border border-border bg-background px-3.5 py-3">
           <Label htmlFor="isTest">درخواست تستی</Label>
           <Switch id="isTest" checked={isTest} onCheckedChange={setIsTest} />
@@ -279,53 +275,8 @@ export function PartRequestFormDialog({ open, onClose }: PartRequestFormDialogPr
           />
         </div>
 
-        <PromptDialog
-          open={isBrandPromptOpen}
-          title="افزودن برند جدید"
-          label="نام برند"
-          placeholder="مثلاً: Nokia"
-          isPending={isCreatingBrand}
-          onClose={() => setIsBrandPromptOpen(false)}
-          onSubmit={async (name) => {
-            setIsCreatingBrand(true);
-            try {
-              const created = await quickCreate.createBrand(name);
-              setBrandId(created.id);
-              setModelName('');
-              toast('برند افزوده شد');
-              setIsBrandPromptOpen(false);
-            } catch (error) {
-              toast(error instanceof Error ? error.message : 'خطا', 'error');
-            } finally {
-              setIsCreatingBrand(false);
-            }
-          }}
-        />
-
-        <PromptDialog
-          open={isPartPromptOpen}
-          title="افزودن قطعه جدید"
-          label="نام قطعه"
-          placeholder="مثلاً: تاچ"
-          isPending={isCreatingPart}
-          onClose={() => setIsPartPromptOpen(false)}
-          onSubmit={async (name) => {
-            setIsCreatingPart(true);
-            try {
-              const created = await quickCreate.createPart(name);
-              setPartId(created.id);
-              toast('قطعه افزوده شد');
-              setIsPartPromptOpen(false);
-            } catch (error) {
-              toast(error instanceof Error ? error.message : 'خطا', 'error');
-            } finally {
-              setIsCreatingPart(false);
-            }
-          }}
-        />
-
-        <Button onClick={handleSubmit} disabled={isPending}>
-          {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+        <Button onClick={handleSubmit} disabled={createRequest.isPending}>
+          {createRequest.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
           ثبت درخواست
         </Button>
       </div>

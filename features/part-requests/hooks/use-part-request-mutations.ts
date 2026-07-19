@@ -38,3 +38,19 @@ export function useApplyPartRequestAction() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['part-requests'] }),
   });
 }
+
+export function useUpdatePartRequest() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ requestId, ...input }: { requestId: string } & Record<string, unknown>) =>
+      apiFetch<PartRequestDetailDto>(`/api/v1/part-requests/${requestId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(input),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['part-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['activity-logs'] });
+    },
+  });
+}
