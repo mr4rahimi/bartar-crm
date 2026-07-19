@@ -521,8 +521,9 @@ model DeviceType {
   id   String @id @default(cuid())
   name String @unique
 
-  models DeviceModel[]
-  issues DeviceIssue[]
+  models      DeviceModel[]
+  issues      DeviceIssue[]
+  accessories Accessory[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -557,15 +558,18 @@ model PartPrice {
 // -------------------------------------------------------------
 
 model Accessory {
-  id   String @id @default(cuid())
-  name String @unique
+  id           String  @id @default(cuid())
+  name         String
+  deviceTypeId String?
 
-  tickets RepairTicketAccessory[]
+  deviceType DeviceType? @relation(fields: [deviceTypeId], references: [id])
+  tickets    RepairTicketAccessory[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
+  @@unique([name, deviceTypeId])
   @@map("accessories")
 }
 
