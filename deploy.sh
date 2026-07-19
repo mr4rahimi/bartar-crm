@@ -23,7 +23,7 @@ else
 fi
 
 echo "اجرای build روی سرور…"
-ssh "$SERVER" "cd $REMOTE_DIR && npm install && npx prisma migrate deploy && npm run build && pm2 restart bartar-crm"
+ssh "$SERVER" "cd $REMOTE_DIR && npm install && npx prisma generate && npx prisma migrate deploy && npm run build && pm2 restart bartar-crm"
 
 git tag -f "$LAST_TAG"
 echo "✅ دیپلوی کامل شد."
