@@ -4,7 +4,9 @@ import {
   createPartRequest,
   transitionPartRequest,
 } from '../repositories/part-request.repository';
+import type { Prisma } from '@prisma/client';
 import { findPartById, listParts } from '../repositories/part.repository';
+import { updatePartRequest } from '../repositories/part-request.repository';
 import { findActionDef } from '../constants/state-machine.constants';
 import { PART_REQUEST_STATUS_LABELS } from '@/shared/constants/part-request-status';
 import { getModelForLinking } from '@/features/pricing/services/taxonomy.service';
@@ -272,4 +274,79 @@ export async function markPartRequestReturned(
   });
 
   return request;
+}
+
+/** ویرایش مدیریتی درخواست — همه‌ی فیلدها، در هر وضعیت (Permission: EDIT_PART_REQUEST) */
+export async function updatePartRequestService(
+  requestId: string,
+  input: import('../validators/update-part-request.schema').UpdatePartRequestInput,
+  context: ActorContext,
+) {
+  const current = await findPartRequestById(requestId);
+  if (!current) throw new NotFoundError('درخواست قطعه یافت نشد');
+
+  const data: import('../repositories/part-request.repository').UpdatePartRequestData = {};
+  const previousValue: Record<string, unknown> = {};
+  const newValue: Record<string, unknown> = {};
+
+  const track = <T>(key: string, next: T | undefined, previous: T) => {
+    if (next === undefined || next === previous) return false;
+    previousValue[key] = previous;
+    newValue[key] = next;
+    return true;
+  };
+
+  if (track('receptionNumber', input.receptionNumber, current.receptionNumber)) {
+    data.receptionNumber = input.receptionNumber;
+  }
+  if (input.partId && input.partId !== current.partId) {
+    const part = await findPartById(input.partId);
+    if (!part) throw new NotFoundError('قطعه انتخاب‌شده یافت نشد');
+    previousValue.part = current.part.name;
+    newValue.part = part.name;
+    data.partId = part.id;
+  }
+  if (input.modelId !== undefined && input.modelId !== current.modelId) {
+    const linked = input.modelId ? await getModelForLinking(input.modelId) : null;
+    previousValue.model = current.model;
+    newValue.model = linked?.name ?? null;
+    data.modelId = input.modelId;
+    data.brand = linked?.brandName ?? null;
+    data.model = linked?.name ?? null;
+  }
+  if (track('quality', input.quality, current.quality)) data.quality = input.quality;
+  if (track('quantity', input.quantity, current.quantity)) data.quantity = input.quantity;
+  if (input.announcedPrice !== undefined && input.announcedPrice !== current.announcedPrice) {
+    previousValue.announcedPrice = current.announcedPrice;
+    newValue.announcedPrice = input.announcedPrice;
+    data.announcedPrice = input.announcedPrice;
+  }
+  if (input.depositAmount !== undefined && input.depositAmount !== current.depositAmount) {
+    previousValue.depositAmount = current.depositAmount;
+    newValue.depositAmount = input.depositAmount;
+    data.depositAmount = input.depositAmount ?? 0;
+  }
+  if (track('isTest', input.isTest, current.isTest)) data.isTest = input.isTest;
+  if (input.description !== undefined && input.description !== current.description) {
+    previousValue.description = current.description;
+    newValue.description = input.description;
+    data.description = input.description;
+  }
+
+  if (Object.keys(data).length === 0) return getPartRequestService(requestId);
+
+  await updatePartRequest(requestId, data);
+
+  await logActivity({
+    userId: context.actorId,
+    action: 'EDIT_PART_REQUEST',
+    entityType: 'PartRequest',
+    entityId: requestId,
+    previousValue: previousValue as Prisma.InputJsonValue,
+    newValue: newValue as Prisma.InputJsonValue,
+    ip: context.ip,
+    device: context.device,
+  });
+
+  return getPartRequestService(requestId);
 }

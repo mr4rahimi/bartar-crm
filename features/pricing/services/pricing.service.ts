@@ -255,3 +255,24 @@ export async function getPriceListService(
     pageSize: PRICE_LIST_PAGE_SIZE,
   };
 }
+
+/**
+ * بررسی اینکه قیمت اعلامی از آخرین قیمت خرید کمتر است یا نه.
+ * مبلغ خرید فقط برای دارندگان EDIT_PRICE برگردانده می‌شود.
+ */
+export async function checkAnnouncedPriceService(params: {
+  modelId: string;
+  partId: string;
+  quality: PartQuality;
+  price: number;
+  includeBuyPrice: boolean;
+}) {
+  const existing = await findPartPrice(params.modelId, params.partId, params.quality);
+  const lastBuyPrice = existing?.buyPrice ?? null;
+
+  return {
+    isBelowLastBuy: lastBuyPrice !== null && params.price < lastBuyPrice,
+    lastBuyPrice: params.includeBuyPrice ? lastBuyPrice : null,
+    hasBuyPrice: lastBuyPrice !== null,
+  };
+}

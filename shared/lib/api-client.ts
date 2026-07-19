@@ -1,3 +1,4 @@
+import '@/shared/lib/zod-persian';
 // کلاینت fetch با فرمت پاسخ استاندارد docs/08-api-conventions.md
 type ApiEnvelope<T> =
   | { success: true; data: T }

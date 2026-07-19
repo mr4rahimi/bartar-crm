@@ -12,6 +12,8 @@ export type StatusHistoryDto = {
 export type PartRequestDto = {
   id: string;
   receptionNumber: string;
+  partId: string;
+  modelId: string | null;
   partName: string;
   quality: PartQuality;
   quantity: number;

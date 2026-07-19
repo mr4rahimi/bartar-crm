@@ -91,3 +91,21 @@ export async function transitionPartRequest(params: {
     }),
   ]);
 }
+
+export type UpdatePartRequestData = {
+  receptionNumber?: string;
+  partId?: string;
+  modelId?: string | null;
+  quality?: PartQuality;
+  quantity?: number;
+  brand?: string | null;
+  model?: string | null;
+  announcedPrice?: number | null;
+  depositAmount?: number;
+  isTest?: boolean;
+  description?: string | null;
+};
+
+export async function updatePartRequest(requestId: string, data: UpdatePartRequestData) {
+  return prisma.partRequest.update({ where: { id: requestId }, data });
+}

@@ -14,6 +14,8 @@ export function toPartRequestDto(request: PartRequestWithRelations): PartRequest
   return {
     id: request.id,
     receptionNumber: request.receptionNumber,
+    partId: request.partId,
+    modelId: request.modelId,
     partName: request.part.name,
     quality: request.quality,
     quantity: request.quantity,

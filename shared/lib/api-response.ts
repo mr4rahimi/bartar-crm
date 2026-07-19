@@ -1,3 +1,4 @@
+import '@/shared/lib/zod-persian';
 import { NextResponse } from 'next/server';
 import type { ZodError } from 'zod';
 
