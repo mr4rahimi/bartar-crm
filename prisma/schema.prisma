@@ -105,9 +105,23 @@ model RolePermission {
 // Phase 1: Customer used only for linking to Repair Ticket
 // -------------------------------------------------------------
 
+enum CustomerTitle {
+  MR
+  MRS
+  COMPANY
+}
+
 model Customer {
-  id             String  @id @default(cuid())
+  id             String        @id @default(cuid())
+  title          CustomerTitle @default(MR)
+  // نام نمایشی (از اجزا ساخته می‌شود) — برای جستجو و سازگاری با گذشته
   name           String
+  firstName      String?
+  lastName       String?
+  companyName    String?
+  // کد ملی (شخص) یا شناسه ملی (شرکت)
+  nationalCode   String?
+  postalCode     String?
   phone          String
   secondaryPhone String?
   address        String?
@@ -193,12 +207,24 @@ model RepairTicket {
   deviceId     String
   status       RepairTicketStatus @default(OPEN)
   issueDescription String?
+
+  // فاز پذیرش داخلی — docs/20-reception-spec.md
+  estimatedCost       Int?
+  estimatedDeliveryAt DateTime?
+  devicePassword      String?
+  technicianNotes     String? // در قبض مشتری چاپ نمی‌شود
+  customerNotes       String? // در قبض مشتری چاپ می‌شود
+  shelfNumber         String?
+  publicToken         String  @unique @default(cuid())
+
   createdById  String
 
   customer     Customer      @relation(fields: [customerId], references: [id])
   device       Device        @relation(fields: [deviceId], references: [id])
   createdBy    User          @relation("RepairTicketCreatedBy", fields: [createdById], references: [id])
   partRequests PartRequest[]
+  accessories  RepairTicketAccessory[]
+  issues       RepairTicketIssue[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -496,6 +522,7 @@ model DeviceType {
   name String @unique
 
   models DeviceModel[]
+  issues DeviceIssue[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -523,4 +550,60 @@ model PartPrice {
 
   @@unique([modelId, partId, quality])
   @@map("part_prices")
+}
+
+// -------------------------------------------------------------
+// Reception Catalog — متعلقات و ایرادات (docs/20-reception-spec.md)
+// -------------------------------------------------------------
+
+model Accessory {
+  id   String @id @default(cuid())
+  name String @unique
+
+  tickets RepairTicketAccessory[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("accessories")
+}
+
+// ایراد وابسته به نوع دستگاه — deviceTypeId خالی = عمومی برای همه‌ی انواع
+model DeviceIssue {
+  id           String  @id @default(cuid())
+  name         String
+  deviceTypeId String?
+
+  deviceType DeviceType? @relation(fields: [deviceTypeId], references: [id])
+  tickets    RepairTicketIssue[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@unique([name, deviceTypeId])
+  @@map("device_issues")
+}
+
+model RepairTicketAccessory {
+  ticketId    String
+  accessoryId String
+
+  ticket    RepairTicket @relation(fields: [ticketId], references: [id])
+  accessory Accessory    @relation(fields: [accessoryId], references: [id])
+
+  @@id([ticketId, accessoryId])
+  @@map("repair_ticket_accessories")
+}
+
+model RepairTicketIssue {
+  ticketId String
+  issueId  String
+
+  ticket RepairTicket @relation(fields: [ticketId], references: [id])
+  issue  DeviceIssue  @relation(fields: [issueId], references: [id])
+
+  @@id([ticketId, issueId])
+  @@map("repair_ticket_issues")
 }
