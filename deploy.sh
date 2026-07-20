@@ -14,6 +14,15 @@ if git rev-parse "$LAST_TAG" >/dev/null 2>&1; then
   fi
   echo "$FILES"
   echo "$FILES" | rsync -avz --files-from=- ./ "$SERVER:$REMOTE_DIR/"
+
+  # فایل‌های حذف‌شده را روی سرور هم پاک کن (rsync عمداً --delete ندارد)
+  DELETED=$(git diff --name-only --diff-filter=D "$LAST_TAG" HEAD)
+  if [ -n "$DELETED" ]; then
+    echo "حذف فایل‌های زیر روی سرور:"
+    echo "$DELETED"
+    RM_CMD=$(echo "$DELETED" | sed "s|^|rm -f '$REMOTE_DIR/|; s|$|'|" | tr '\n' ';')
+    ssh "$SERVER" "$RM_CMD"
+  fi
 else
   echo "اولین دیپلوی — ارسال کل سورس (به‌جز node_modules/.next/.git/.env):"
   rsync -avz \

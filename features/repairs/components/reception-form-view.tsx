@@ -2,16 +2,17 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Loader2, Printer, Save } from 'lucide-react';
+import { ArrowRight, Grid3x3, Loader2, Plus, Printer, Save } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
-import { Select } from '@/shared/components/ui/select';
 import { Textarea } from '@/shared/components/ui/textarea';
 import { PriceInput } from '@/shared/components/ui/price-input';
 import { PromptDialog } from '@/shared/components/ui/prompt-dialog';
 import { ChipMultiSelect } from '@/shared/components/ui/chip-multi-select';
 import { JalaliDateInput } from '@/shared/components/ui/jalali-date-input';
+import { SearchableSelect } from '@/shared/components/ui/searchable-select';
+import { PatternLockDialog } from '@/shared/components/ui/pattern-lock-dialog';
 import { useToast } from '@/shared/components/providers/toast-provider';
 // هوک‌های تاکسونومی مشترک‌اند (نوع دستگاه/برند/مدل)
 import { useTaxonomy, useCreateModel } from '@/features/part-requests/hooks/use-taxonomy';
@@ -33,6 +34,20 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+/** دکمه مربعی کنار فیلدها برای افزودن سریع */
+function AddButton({ title, onClick }: { title: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      title={title}
+      onClick={onClick}
+      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-border bg-card text-primary hover:bg-muted"
+    >
+      <Plus className="h-4 w-4" />
+    </button>
+  );
+}
+
 export function ReceptionFormView() {
   const router = useRouter();
   const { toast } = useToast();
@@ -45,7 +60,7 @@ export function ReceptionFormView() {
   const [customer, setCustomer] = useState<CustomerDto | null>(null);
   const [deviceTypeId, setDeviceTypeId] = useState('');
   const [brandId, setBrandId] = useState('');
-  const [modelName, setModelName] = useState('');
+  const [modelId, setModelId] = useState('');
   const [serial, setSerial] = useState('');
   const [devicePassword, setDevicePassword] = useState('');
   const [estimatedCost, setEstimatedCost] = useState('');
@@ -55,7 +70,9 @@ export function ReceptionFormView() {
   const [technicianNotes, setTechnicianNotes] = useState('');
   const [customerNotes, setCustomerNotes] = useState('');
 
+  const [isPatternOpen, setIsPatternOpen] = useState(false);
   const [isBrandPromptOpen, setIsBrandPromptOpen] = useState(false);
+  const [isModelPromptOpen, setIsModelPromptOpen] = useState(false);
   const [isAccessoryPromptOpen, setIsAccessoryPromptOpen] = useState(false);
   const [isIssuePromptOpen, setIsIssuePromptOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -66,18 +83,44 @@ export function ReceptionFormView() {
 
   const filteredModels = useMemo(() => {
     if (!taxonomy.data || !brandId) return [];
-    return taxonomy.data.models.filter(
-      (model) =>
-        model.brandId === brandId &&
-        (!deviceTypeId || model.deviceTypeId === deviceTypeId || model.deviceTypeId === null),
-    );
+    return taxonomy.data.models
+      .filter(
+        (model) =>
+          model.brandId === brandId &&
+          (!deviceTypeId || model.deviceTypeId === deviceTypeId || model.deviceTypeId === null),
+      )
+      .map((model) => ({ id: model.id, name: model.name }));
   }, [taxonomy.data, brandId, deviceTypeId]);
-
-  const matchedModel = filteredModels.find((model) => model.name.trim() === modelName.trim());
-  const isNewModel = Boolean(modelName.trim() && brandId && !matchedModel);
 
   const toggle = (list: string[], setList: (value: string[]) => void, id: string) => {
     setList(list.includes(id) ? list.filter((item) => item !== id) : [...list, id]);
+  };
+
+  const addBrand = async (name: string) => {
+    try {
+      const created = await quickCreate.createBrand(name);
+      setBrandId(created.id);
+      setModelId('');
+      toast('برند افزوده شد');
+      setIsBrandPromptOpen(false);
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'خطا', 'error');
+    }
+  };
+
+  const addModel = async (name: string) => {
+    if (!deviceTypeId || !brandId) {
+      toast('ابتدا نوع دستگاه و برند را انتخاب کنید', 'error');
+      return;
+    }
+    try {
+      const created = await createModel.mutateAsync({ name, deviceTypeId, brandId });
+      setModelId(created.id);
+      toast('مدل افزوده شد');
+      setIsModelPromptOpen(false);
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'خطا', 'error');
+    }
   };
 
   const submit = async (thenPrint: boolean) => {
@@ -85,23 +128,13 @@ export function ReceptionFormView() {
       toast('مشتری را انتخاب یا ثبت کنید', 'error');
       return;
     }
-    if (!deviceTypeId || !brandId || !modelName.trim()) {
+    if (!deviceTypeId || !brandId || !modelId) {
       toast('نوع دستگاه، برند و مدل را مشخص کنید', 'error');
       return;
     }
 
     setIsSaving(true);
     try {
-      let modelId = matchedModel?.id;
-      if (!modelId) {
-        const created = await createModel.mutateAsync({
-          name: modelName.trim(),
-          deviceTypeId,
-          brandId,
-        });
-        modelId = created.id;
-      }
-
       const ticket = await createTicket.mutateAsync({
         customerId: customer.id,
         deviceTypeId,
@@ -118,7 +151,8 @@ export function ReceptionFormView() {
       });
 
       toast(`قبض پذیرش #${ticket.ticketNumber} ثبت شد`);
-      router.push(thenPrint ? `/repairs/${ticket.id}/print` : '/repairs');
+      if (thenPrint) window.open(`/repairs/${ticket.id}/print`, '_blank');
+      router.push('/repairs');
     } catch (error) {
       toast(error instanceof Error ? error.message : 'خطا در ثبت پذیرش', 'error');
     } finally {
@@ -153,68 +187,57 @@ export function ReceptionFormView() {
 
           <Section title="دستگاه">
             <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-2.5">
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="deviceType">نوع دستگاه</Label>
-                  <Select
-                    id="deviceType"
-                    value={deviceTypeId}
-                    onChange={(event) => {
-                      setDeviceTypeId(event.target.value);
-                      setModelName('');
-                      setIssueIds([]);
-                      setAccessoryIds([]);
-                    }}
-                  >
-                    <option value="">انتخاب کنید…</option>
-                    {taxonomy.data?.deviceTypes.map((type) => (
-                      <option key={type.id} value={type.id}>{type.name}</option>
-                    ))}
-                  </Select>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="brand">برند</Label>
-                  <div className="flex gap-1.5">
-                    <Select
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="deviceType">نوع دستگاه</Label>
+                <SearchableSelect
+                  id="deviceType"
+                  items={taxonomy.data?.deviceTypes ?? []}
+                  value={deviceTypeId}
+                  onChange={(id) => {
+                    setDeviceTypeId(id);
+                    setModelId('');
+                    setIssueIds([]);
+                    setAccessoryIds([]);
+                  }}
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="brand">برند</Label>
+                <div className="flex gap-1.5">
+                  <div className="flex-1">
+                    <SearchableSelect
                       id="brand"
+                      items={taxonomy.data?.brands ?? []}
                       value={brandId}
-                      onChange={(event) => { setBrandId(event.target.value); setModelName(''); }}
-                    >
-                      <option value="">انتخاب کنید…</option>
-                      {taxonomy.data?.brands.map((brand) => (
-                        <option key={brand.id} value={brand.id}>{brand.name}</option>
-                      ))}
-                    </Select>
-                    <button
-                      type="button"
-                      title="افزودن برند"
-                      onClick={() => setIsBrandPromptOpen(true)}
-                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-border bg-card text-lg font-bold text-primary"
-                    >
-                      +
-                    </button>
+                      onChange={(id) => { setBrandId(id); setModelId(''); }}
+                      createLabel="ثبت برند"
+                      onCreate={addBrand}
+                    />
                   </div>
+                  <AddButton title="افزودن برند" onClick={() => setIsBrandPromptOpen(true)} />
                 </div>
               </div>
 
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="model">مدل</Label>
-                <Input
-                  id="model"
-                  list="reception-model-options"
-                  placeholder="جستجو یا ورود مدل جدید…"
-                  value={modelName}
-                  disabled={!brandId}
-                  onChange={(event) => setModelName(event.target.value)}
-                />
-                <datalist id="reception-model-options">
-                  {filteredModels.map((model) => <option key={model.id} value={model.name} />)}
-                </datalist>
-                {isNewModel && (
-                  <p className="text-[11px] font-semibold text-accent-foreground">
-                    مدل «{modelName.trim()}» جدید است و هنگام ثبت اضافه می‌شود.
-                  </p>
-                )}
+                <div className="flex gap-1.5">
+                  <div className="flex-1">
+                    <SearchableSelect
+                      id="model"
+                      items={filteredModels}
+                      value={modelId}
+                      onChange={setModelId}
+                      disabled={!brandId}
+                      placeholder={brandId ? 'جستجو یا ثبت مدل…' : 'ابتدا برند را انتخاب کنید'}
+                      emptyText="مدلی برای این برند ثبت نشده"
+                      isCreating={createModel.isPending}
+                      createLabel="ثبت مدل"
+                      onCreate={addModel}
+                    />
+                  </div>
+                  <AddButton title="افزودن مدل" onClick={() => setIsModelPromptOpen(true)} />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2.5">
@@ -230,22 +253,31 @@ export function ReceptionFormView() {
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="devicePassword">پسورد دستگاه</Label>
-                  <Input
-                    id="devicePassword"
-                    value={devicePassword}
-                    onChange={(event) => setDevicePassword(event.target.value)}
-                  />
+                  <div className="flex gap-1.5">
+                    <Input
+                      id="devicePassword"
+                      dir="ltr"
+                      className="text-right"
+                      placeholder="رمز یا الگو"
+                      value={devicePassword}
+                      onChange={(event) => setDevicePassword(event.target.value)}
+                    />
+                    <button
+                      type="button"
+                      title="رسم الگوی قفل"
+                      onClick={() => setIsPatternOpen(true)}
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-border bg-card text-primary hover:bg-muted"
+                    >
+                      <Grid3x3 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2.5">
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="estimatedCost">هزینه تقریبی (تومان)</Label>
-                  <PriceInput
-                    id="estimatedCost"
-                    value={estimatedCost}
-                    onChange={setEstimatedCost}
-                  />
+                  <PriceInput id="estimatedCost" value={estimatedCost} onChange={setEstimatedCost} />
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="deliveryAt">موعد تقریبی تحویل</Label>
@@ -339,22 +371,29 @@ export function ReceptionFormView() {
         </Button>
       </div>
 
+      <PatternLockDialog
+        open={isPatternOpen}
+        onClose={() => setIsPatternOpen(false)}
+        onSubmit={setDevicePassword}
+      />
+
       <PromptDialog
         open={isBrandPromptOpen}
         title="افزودن برند جدید"
         label="نام برند"
+        placeholder="مثلاً: Nokia"
         onClose={() => setIsBrandPromptOpen(false)}
-        onSubmit={async (name) => {
-          try {
-            const created = await quickCreate.createBrand(name);
-            setBrandId(created.id);
-            setModelName('');
-            toast('برند افزوده شد');
-            setIsBrandPromptOpen(false);
-          } catch (error) {
-            toast(error instanceof Error ? error.message : 'خطا', 'error');
-          }
-        }}
+        onSubmit={addBrand}
+      />
+
+      <PromptDialog
+        open={isModelPromptOpen}
+        title="افزودن مدل جدید"
+        label="نام مدل"
+        placeholder="مثلاً: Galaxy A55"
+        isPending={createModel.isPending}
+        onClose={() => setIsModelPromptOpen(false)}
+        onSubmit={addModel}
       />
 
       <PromptDialog
