@@ -19,7 +19,7 @@ export function InvoicePrintView({ invoice }: { invoice: InvoiceDto }) {
   notes.push(...invoice.extraNotes);
 
   const totalRial = invoice.total * 10;
-  const emptyRows = Math.max(0, 6 - invoice.items.length);
+  
 
   return (
     <>
@@ -116,20 +116,11 @@ export function InvoicePrintView({ invoice }: { invoice: InvoiceDto }) {
                 </td>
               </tr>
             ))}
-            {Array.from({ length: emptyRows }).map((_, index) => (
-              <tr key={`empty-${index}`}>
-                {[0, 1, 2, 3, 4].map((cell) => (
-                  <td key={cell} className="border border-gray-400 px-1.5 py-1 text-[8pt]">
-                    &nbsp;
-                  </td>
-                ))}
-              </tr>
-            ))}
           </tbody>
         </table>
 
         {/* ---------- جمع‌ها ---------- */}
-        <section className="mt-2 flex justify-start">
+         <section className="mt-2 flex justify-end">
           <div className="w-[62mm] space-y-1">
             <div className="flex justify-between text-[8pt]">
               <span className="text-gray-600">جمع کل</span>
@@ -169,14 +160,14 @@ export function InvoicePrintView({ invoice }: { invoice: InvoiceDto }) {
         </section>
 
         {/* ---------- پاورقی ---------- */}
-        <footer className="border-t-2 border-black pt-1.5">
-          <div className="text-center text-[6.5pt] leading-[9pt]">
-            <div>نشانی: {INVOICE_HEADER.address}</div>
-            <div className="font-bold">تلفن: {INVOICE_HEADER.phone}</div>
-          </div>
-          <div className="mt-3 flex justify-between px-6 text-[8pt] font-bold">
+        <footer>
+          <div className="mb-2 flex justify-between px-6 text-[8pt] font-bold">
             <span>امضای خریدار</span>
             <span>امضای فروشنده</span>
+          </div>
+          <div className="border-t-2 border-black pt-1.5 text-center text-[6.5pt] leading-[9pt]">
+            <div>نشانی: {INVOICE_HEADER.address}</div>
+            <div className="font-bold">تلفن: {INVOICE_HEADER.phone}</div>
           </div>
         </footer>
       </div>
