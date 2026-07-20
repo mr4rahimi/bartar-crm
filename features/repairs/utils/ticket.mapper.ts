@@ -22,8 +22,11 @@ export function toTicketDto(ticket: TicketWithRelations): TicketDto {
     publicToken: ticket.publicToken,
     customer: toCustomerDto(ticket.customer),
     device: {
+      deviceTypeId: ticket.device.model.deviceTypeId,
       deviceType: ticket.device.model.deviceType?.name ?? null,
+      brandId: ticket.device.brandId,
       brand: ticket.device.brand.name,
+      modelId: ticket.device.modelId,
       model: ticket.device.model.name,
       serial: ticket.device.serial,
     },
@@ -31,12 +34,16 @@ export function toTicketDto(ticket: TicketWithRelations): TicketDto {
     estimatedCost: ticket.estimatedCost,
     estimatedDeliveryAt: ticket.estimatedDeliveryAt,
     accessories: ticket.accessories.map((item) => item.accessory.name),
+    accessoryIds: ticket.accessories.map((item) => item.accessoryId),
     issues: ticket.issues.map((item) => item.issue.name),
+    issueIds: ticket.issues.map((item) => item.issueId),
     technicianNotes: ticket.technicianNotes,
     customerNotes: ticket.customerNotes,
     issueDescription: ticket.issueDescription,
     shelfNumber: ticket.shelfNumber,
     createdByName: ticket.createdBy.name,
     createdAt: ticket.createdAt,
+    deletedAt: ticket.deletedAt,
+    deletedByName: null,
   };
 }

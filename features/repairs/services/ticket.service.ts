@@ -22,9 +22,26 @@ export async function listTicketsService(query: TicketQueryInput) {
     pageSize: query.pageSize,
     search: query.search,
     status: query.status,
+    sortBy: query.sortBy,
+    sortDir: query.sortDir,
+    deleted: query.deleted,
   });
 
-  return { items: items.map(toTicketDto), total, page: query.page, pageSize: query.pageSize };
+  const dtos = items.map(toTicketDto);
+
+  // نام کاربر حذف‌کننده (بدون Relation در Schema — یک کوئری تجمیعی)
+  if (query.deleted) {
+    const deleterIds = [...new Set(items.map((item) => item.deletedById).filter(Boolean))] as string[];
+    const users = await findUsersByIds(deleterIds);
+    const nameById = new Map(users.map((user) => [user.id, user.name]));
+
+    items.forEach((item, index) => {
+      const dto = dtos[index];
+      if (dto && item.deletedById) dto.deletedByName = nameById.get(item.deletedById) ?? null;
+    });
+  }
+
+  return { items: dtos, total, page: query.page, pageSize: query.pageSize };
 }
 
 export async function getTicketService(ticketId: string) {
@@ -104,6 +121,132 @@ export async function createTicketService(input: CreateTicketInput, context: Act
       .filter(Boolean)
       .join(' '),
     actorId: context.actorId,
+  });
+
+  return toTicketDto(ticket);
+}
+
+// ----- ویرایش، حذف و بازیابی قبض پذیرش (docs/20-reception-spec.md) -----
+
+import {
+  findAnyTicketById,
+  updateTicketWithRelations,
+  softDeleteTicket,
+  restoreTicket,
+  findUsersByIds,
+} from '../repositories/ticket.repository';
+import { AppError } from '@/shared/lib/errors';
+import type { UpdateTicketInput } from '../validators/update-ticket.schema';
+
+export async function updateTicketService(
+  ticketId: string,
+  input: UpdateTicketInput,
+  context: ActorContext,
+) {
+  const current = await findAnyTicketById(ticketId);
+  if (!current) throw new NotFoundError('قبض پذیرش یافت نشد');
+  if (current.deletedAt) throw new AppError('این قبض حذف شده است', 409);
+
+  const data: Record<string, unknown> = {};
+  const device: { brandId?: string; modelId?: string; serial?: string | null } = {};
+  const previousValue: Record<string, unknown> = {};
+  const newValue: Record<string, unknown> = {};
+
+  const track = (key: string, next: unknown, previous: unknown) => {
+    if (next === undefined || next === previous) return false;
+    previousValue[key] = previous;
+    newValue[key] = next;
+    return true;
+  };
+
+  if (track('customer', input.customerId, current.customerId)) data.customerId = input.customerId;
+  if (track('brand', input.brandId, current.device.brandId)) device.brandId = input.brandId;
+  if (track('model', input.modelId, current.device.modelId)) device.modelId = input.modelId;
+  if (track('serial', input.serial, current.device.serial)) device.serial = input.serial;
+  if (track('devicePassword', input.devicePassword, current.devicePassword)) {
+    data.devicePassword = input.devicePassword;
+  }
+  if (track('shelfNumber', input.shelfNumber, current.shelfNumber)) {
+    data.shelfNumber = input.shelfNumber;
+  }
+  if (track('estimatedCost', input.estimatedCost, current.estimatedCost)) {
+    data.estimatedCost = input.estimatedCost;
+  }
+  if (input.estimatedDeliveryAt !== undefined) {
+    const next = input.estimatedDeliveryAt ? new Date(input.estimatedDeliveryAt) : null;
+    const previous = current.estimatedDeliveryAt;
+    if (next?.getTime() !== previous?.getTime()) {
+      previousValue.estimatedDeliveryAt = previous;
+      newValue.estimatedDeliveryAt = next;
+      data.estimatedDeliveryAt = next;
+    }
+  }
+  if (track('status', input.status, current.status)) data.status = input.status;
+  if (track('technicianNotes', input.technicianNotes, current.technicianNotes)) {
+    data.technicianNotes = input.technicianNotes;
+  }
+  if (track('customerNotes', input.customerNotes, current.customerNotes)) {
+    data.customerNotes = input.customerNotes;
+  }
+  if (input.accessoryIds) newValue.accessories = input.accessoryIds.length;
+  if (input.issueIds) newValue.issues = input.issueIds.length;
+
+  const ticket = await updateTicketWithRelations({
+    ticketId,
+    deviceId: current.deviceId,
+    data,
+    device,
+    accessoryIds: input.accessoryIds,
+    issueIds: input.issueIds,
+  });
+
+  await logActivity({
+    userId: context.actorId,
+    action: 'EDIT_REPAIR',
+    entityType: 'RepairTicket',
+    entityId: ticketId,
+    previousValue: previousValue as never,
+    newValue: newValue as never,
+    ip: context.ip,
+    device: context.device,
+  });
+
+  return toTicketDto(ticket);
+}
+
+export async function deleteTicketService(ticketId: string, context: ActorContext) {
+  const current = await findAnyTicketById(ticketId);
+  if (!current) throw new NotFoundError('قبض پذیرش یافت نشد');
+  if (current.deletedAt) throw new AppError('این قبض قبلاً حذف شده است', 409);
+
+  await softDeleteTicket(ticketId, context.actorId);
+
+  await logActivity({
+    userId: context.actorId,
+    action: 'DELETE_REPAIR',
+    entityType: 'RepairTicket',
+    entityId: ticketId,
+    previousValue: { ticketNumber: current.ticketNumber } as never,
+    ip: context.ip,
+    device: context.device,
+  });
+}
+
+export async function restoreTicketService(ticketId: string, context: ActorContext) {
+  const current = await findAnyTicketById(ticketId);
+  if (!current) throw new NotFoundError('قبض پذیرش یافت نشد');
+  if (!current.deletedAt) throw new AppError('این قبض حذف نشده است', 409);
+
+  const ticket = await restoreTicket(ticketId);
+
+  await logActivity({
+    userId: context.actorId,
+    action: 'RESTORE_REPAIR',
+    entityType: 'RepairTicket',
+    entityId: ticketId,
+    newValue: { ticketNumber: current.ticketNumber } as never,
+    ip: context.ip,
+    device: context.device,
   });
 
   return toTicketDto(ticket);

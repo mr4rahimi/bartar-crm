@@ -22,6 +22,9 @@ export async function GET(request: NextRequest) {
     const parsed = ticketQuerySchema.safeParse(Object.fromEntries(request.nextUrl.searchParams));
     if (!parsed.success) return apiError('پارامترهای جستجو معتبر نیست', 400, zodIssues(parsed.error));
 
+    // مشاهده حذف‌شده‌ها فقط با DELETE_REPAIR
+    if (parsed.data.deleted) requirePermission(actor, 'DELETE_REPAIR');
+
     return apiSuccess(await listTicketsService(parsed.data));
   } catch (error) {
     return handleApiError(error, '[api/v1/repair-tickets GET]');
