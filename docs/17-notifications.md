@@ -20,6 +20,9 @@
 | PURCHASED | PURCHASED | ثبت‌کننده‌ی درخواست | reception, part |
 | NOT_FOUND | NOT_FOUND | ثبت‌کننده + Permission: CREATE_REPAIR | reception, part |
 | هر تغییر وضعیت | ADMIN | Permission: VIEW_ACTIVITY_LOG | reception, part, status |
+| ثبت قبض پذیرش | RECEIPT | مشتری (شماره ثبت‌شده در پذیرش) | name, device, reception |
+
+> پترن رسید بدون لینک است؛ درج لینک توسط سامانه پیامکی پذیرفته نشد.
 
 ## تنظیمات (.env)
 

@@ -6,7 +6,7 @@ import {
   type SmsRecipient,
 } from '../repositories/notification.repository';
 import { sendPatternSms } from './sms-provider.service';
-import { STATUS_RULES, ADMIN_RULE, type SmsRule } from '../constants/sms.constants';
+import { STATUS_RULES, ADMIN_RULE, SMS_PATTERNS, type SmsRule } from '../constants/sms.constants';
 import { PART_REQUEST_STATUS_LABELS } from '@/shared/constants/part-request-status';
 
 export type PartRequestNotificationPayload = {
@@ -121,4 +121,55 @@ export async function notifyPartRequestEvent(payload: PartRequestNotificationPay
 /** فراخوانی غیرمسدودکننده از سرویس‌های دیگر */
 export function notifyPartRequestEventAsync(payload: PartRequestNotificationPayload) {
   void notifyPartRequestEvent(payload);
+}
+
+// ----- رسید پذیرش برای مشتری (docs/20-reception-spec.md) -----
+
+export type TicketReceiptPayload = {
+  ticketId: string;
+  ticketNumber: string;
+  customerName: string;
+  customerPhone: string;
+  deviceTitle: string;
+  /** کاربر ثبت‌کننده — مالک رکورد لاگ (مشتری کاربر سیستم نیست) */
+  actorId: string;
+};
+
+export async function notifyTicketCreated(payload: TicketReceiptPayload) {
+  try {
+    const patternCode = SMS_PATTERNS.RECEIPT;
+    if (!patternCode || !payload.customerPhone) return;
+
+    const attributes = {
+      name: payload.customerName,
+      device: payload.deviceTitle,
+      reception: payload.ticketNumber,
+    };
+
+    const result = await sendPatternSms({
+      patternCode,
+      recipient: payload.customerPhone,
+      attributes,
+    });
+
+    await createNotificationLog({
+      userId: payload.actorId,
+      title: 'TICKET_RECEIPT',
+      message: `رسید پذیرش ${payload.ticketNumber} برای ${payload.customerName}`,
+      status: result.ok ? 'SENT' : result.skipped ? 'SKIPPED' : 'FAILED',
+      recipient: payload.customerPhone,
+      patternCode,
+      providerRef: result.ok ? result.providerRef : null,
+      error: result.ok ? null : result.error,
+      entityType: 'RepairTicket',
+      entityId: payload.ticketId,
+    });
+  } catch (error) {
+    console.error('[notifyTicketCreated]', error);
+  }
+}
+
+/** فراخوانی غیرمسدودکننده */
+export function notifyTicketCreatedAsync(payload: TicketReceiptPayload) {
+  void notifyTicketCreated(payload);
 }
