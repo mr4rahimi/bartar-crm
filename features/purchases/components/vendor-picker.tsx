@@ -8,7 +8,7 @@ import { useVendors } from '../hooks/use-purchases';
 
 export type VendorSelection =
   | { kind: 'existing'; id: string; name: string }
-  | { kind: 'new'; name: string; phone: string }
+  | { kind: 'new'; name: string; phone: string; landline: string }
   | null;
 
 type VendorPickerProps = {
@@ -51,19 +51,36 @@ export function VendorPicker({ value, onChange }: VendorPickerProps) {
             <X className="h-4 w-4" />
           </button>
         </div>
+
         <Input
           placeholder="نام فروشنده"
           value={value.name}
           onChange={(event) => onChange({ ...value, name: event.target.value })}
           autoFocus
         />
-        <Input
-          dir="ltr"
-          className="text-right"
-          placeholder="موبایل (اختیاری)"
-          value={value.phone}
-          onChange={(event) => onChange({ ...value, phone: event.target.value })}
-        />
+
+        <div className="grid grid-cols-2 gap-2">
+          <Input
+            dir="ltr"
+            className="text-right"
+            inputMode="numeric"
+            placeholder="شماره همراه"
+            value={value.phone}
+            onChange={(event) => onChange({ ...value, phone: event.target.value })}
+          />
+          <Input
+            dir="ltr"
+            className="text-right"
+            inputMode="numeric"
+            placeholder="تلفن ثابت"
+            value={value.landline}
+            onChange={(event) => onChange({ ...value, landline: event.target.value })}
+          />
+        </div>
+
+        <p className="text-[11px] text-muted-foreground">
+          وارد کردن حداقل یکی از دو شماره الزامی است.
+        </p>
       </div>
     );
   }
@@ -87,7 +104,7 @@ export function VendorPicker({ value, onChange }: VendorPickerProps) {
             key={vendor.id}
             type="button"
             onClick={() => onChange({ kind: 'existing', id: vendor.id, name: vendor.name })}
-            className="block w-full border-b border-border px-3.5 py-2.5 text-right text-[13px] hover:bg-muted"
+            className="block w-full border-b border-border px-3.5 py-2.5 text-right text-[13px] last:border-b-0 hover:bg-muted"
           >
             {vendor.name}
             {vendor.phone && (
@@ -102,7 +119,9 @@ export function VendorPicker({ value, onChange }: VendorPickerProps) {
         )}
         <button
           type="button"
-          onClick={() => onChange({ kind: 'new', name: normalizedSearch, phone: '' })}
+          onClick={() =>
+            onChange({ kind: 'new', name: normalizedSearch, phone: '', landline: '' })
+          }
           className="block w-full px-3.5 py-2.5 text-right text-[13px] font-bold text-primary hover:bg-muted"
         >
           + ساخت سریع فروشنده{normalizedSearch ? ` «${normalizedSearch}»` : ''}

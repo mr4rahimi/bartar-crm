@@ -54,7 +54,7 @@ export function useRegisterPurchase() {
     mutationFn: (input: {
       partRequestId: string;
       vendorId?: string;
-      newVendor?: { name: string; phone?: string };
+      newVendor?: { name: string; phone?: string; landline?: string };
       price: string | number;
       description?: string;
     }) =>

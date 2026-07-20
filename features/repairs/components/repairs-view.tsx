@@ -16,6 +16,7 @@ import { useTickets, type TicketSortField } from '../hooks/use-tickets';
 import { useDeleteTicket } from '../hooks/use-ticket-mutations';
 import { TicketTable } from './ticket-table';
 import { TicketEditDialog } from './ticket-edit-dialog';
+import { InvoiceFormDialog } from '@/features/invoices/components/invoice-form-dialog';
 import { TICKET_STATUS_LABELS, TICKET_STATUSES } from '../constants/ticket-status.constants';
 import type { TicketDto } from '../types/ticket.types';
 
@@ -35,6 +36,7 @@ export function RepairsView({ permissions }: { permissions: string[] }) {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [editing, setEditing] = useState<TicketDto | null>(null);
   const [deleting, setDeleting] = useState<TicketDto | null>(null);
+  const [invoicing, setInvoicing] = useState<TicketDto | null>(null);
 
   const debouncedSearch = useDebouncedValue(search, 300);
 
@@ -48,6 +50,7 @@ export function RepairsView({ permissions }: { permissions: string[] }) {
 
   const canEdit = permissions.includes('EDIT_REPAIR');
   const canDelete = permissions.includes('DELETE_REPAIR');
+  const canInvoice = permissions.includes('MANAGE_INVOICE');
 
   const pageSize = query.data?.pageSize ?? 20;
   const totalPages = query.data ? Math.max(1, Math.ceil(query.data.total / pageSize)) : 1;
@@ -64,7 +67,13 @@ export function RepairsView({ permissions }: { permissions: string[] }) {
 
   const renderActions = (ticket: TicketDto) => (
     <>
-      <IconButton icon={FileText} label="فاکتور (به‌زودی)" disabled />
+      <IconButton
+        icon={FileText}
+        label="فاکتور تعمیر"
+        tone="primary"
+        disabled={!canInvoice}
+        onClick={() => setInvoicing(ticket)}
+      />
       <IconButton
         icon={Printer}
         label="چاپ قبض"
@@ -192,6 +201,20 @@ export function RepairsView({ permissions }: { permissions: string[] }) {
       )}
 
       <TicketEditDialog ticket={editing} onClose={() => setEditing(null)} />
+
+      <InvoiceFormDialog
+        ticket={
+          invoicing
+            ? {
+                id: invoicing.id,
+                ticketNumber: invoicing.ticketNumber,
+                customerName: invoicing.customer.name,
+                customerPhone: invoicing.customer.phone,
+              }
+            : null
+        }
+        onClose={() => setInvoicing(null)}
+      />
 
       <ConfirmDialog
         open={deleting !== null}

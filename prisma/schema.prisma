@@ -42,6 +42,8 @@ model User {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
+  invoices Invoice[] @relation("InvoiceCreatedBy")
+
   @@map("users")
 }
 
@@ -227,6 +229,7 @@ model RepairTicket {
   partRequests PartRequest[]
   accessories  RepairTicketAccessory[]
   issues       RepairTicketIssue[]
+  invoice      Invoice?
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -327,6 +330,7 @@ model Vendor {
   id       String  @id @default(cuid())
   name     String
   phone    String?
+  landline       String?
   address  String?
   isActive Boolean @default(true)
 
@@ -612,4 +616,57 @@ model RepairTicketIssue {
 
   @@id([ticketId, issueId])
   @@map("repair_ticket_issues")
+}
+
+// -------------------------------------------------------------
+// Invoice — فاکتور تعمیر (docs/21-invoice-spec.md)
+// -------------------------------------------------------------
+
+enum DiscountType {
+  PERCENT
+  AMOUNT
+}
+
+model Invoice {
+  id            String  @id @default(cuid())
+  invoiceNumber String  @unique
+  ticketId      String  @unique
+
+  // مبالغ به تومان ذخیره می‌شوند
+  subtotal      Int
+  discountType  DiscountType?
+  discountValue Int?
+  discountAmount Int         @default(0)
+  total         Int
+
+  // توضیحات: متن‌های ثابت + متغیر
+  warrantyMonths Int?
+  hasBatteryNote Boolean  @default(false)
+  extraNotes     String[] @default([])
+
+  createdById String
+
+  ticket    RepairTicket  @relation(fields: [ticketId], references: [id])
+  createdBy User          @relation("InvoiceCreatedBy", fields: [createdById], references: [id])
+  items     InvoiceItem[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id        String @id @default(cuid())
+  invoiceId String
+  title     String
+  quantity  Int    @default(1)
+  unitPrice Int
+  total     Int
+  sortOrder Int    @default(0)
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@map("invoice_items")
 }

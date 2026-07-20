@@ -54,10 +54,14 @@ export async function listVendorsService(): Promise<VendorDto[]> {
 }
 
 export async function createVendorService(
-  input: { name: string; phone?: string | null },
+  input: { name: string; phone?: string | null; landline?: string | null },
   context: ActorContext,
 ) {
-  const vendor = await createVendor({ name: input.name, phone: input.phone ?? null });
+  const vendor = await createVendor({
+    name: input.name,
+    phone: input.phone ?? null,
+    landline: input.landline ?? null,
+  });
 
   await logActivity({
     userId: context.actorId,
@@ -69,7 +73,7 @@ export async function createVendorService(
     device: context.device,
   });
 
-  return { id: vendor.id, name: vendor.name, phone: vendor.phone };
+  return { id: vendor.id, name: vendor.name, phone: vendor.phone, landline: vendor.landline };
 }
 
 export async function listPurchasesService(page: number) {

@@ -46,9 +46,15 @@ export function PurchaseFormDialog({ request, onClose }: PurchaseFormDialogProps
       toast('فروشنده را انتخاب کنید یا بسازید', 'error');
       return;
     }
-    if (vendor.kind === 'new' && vendor.name.trim().length < 2) {
-      toast('نام فروشنده را وارد کنید', 'error');
-      return;
+    if (vendor.kind === 'new') {
+      if (vendor.name.trim().length < 2) {
+        toast('نام فروشنده را وارد کنید', 'error');
+        return;
+      }
+      if (!vendor.phone.trim() && !vendor.landline.trim()) {
+        toast('شماره همراه یا تلفن ثابت فروشنده را وارد کنید', 'error');
+        return;
+      }
     }
     if (numericPrice <= 0) {
       toast('قیمت خرید را وارد کنید', 'error');
@@ -61,7 +67,11 @@ export function PurchaseFormDialog({ request, onClose }: PurchaseFormDialogProps
         vendorId: vendor.kind === 'existing' ? vendor.id : undefined,
         newVendor:
           vendor.kind === 'new'
-            ? { name: vendor.name.trim(), phone: vendor.phone.trim() || undefined }
+            ? {
+                name: vendor.name.trim(),
+                phone: vendor.phone.trim() || undefined,
+                landline: vendor.landline.trim() || undefined,
+              }
             : undefined,
         price,
         description: description.trim() || undefined,
