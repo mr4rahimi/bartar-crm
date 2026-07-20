@@ -7,6 +7,7 @@ import {
 } from '../repositories/ticket.repository';
 import { createCustomerService } from './customer.service';
 import { findCustomerById } from '../repositories/customer.repository';
+import { notifyTicketCreatedAsync } from '@/features/notifications/services/notification.service';
 import { logActivity } from '@/features/activity-logs/services/log-activity.service';
 import { NotFoundError } from '@/shared/lib/errors';
 import { toTicketDto } from '../utils/ticket.mapper';
@@ -87,6 +88,22 @@ export async function createTicketService(input: CreateTicketInput, context: Act
     },
     ip: context.ip,
     device: context.device,
+  });
+
+  // رسید پذیرش برای مشتری — بدون مسدود کردن جریان ثبت
+  notifyTicketCreatedAsync({
+    ticketId: ticket.id,
+    ticketNumber: ticket.ticketNumber,
+    customerName: ticket.customer.name,
+    customerPhone: ticket.customer.phone,
+    deviceTitle: [
+      ticket.device.model.deviceType?.name,
+      ticket.device.brand.name,
+      ticket.device.model.name,
+    ]
+      .filter(Boolean)
+      .join(' '),
+    actorId: context.actorId,
   });
 
   return toTicketDto(ticket);
