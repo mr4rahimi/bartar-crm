@@ -6,5 +6,5 @@ export default async function RepairsPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/auth/login');
 
-  return <RepairsView permissions={user.permissions} />;
+    return <RepairsView permissions={user.permissions} currentUserId={user.id} />;
 }

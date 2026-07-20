@@ -37,6 +37,9 @@ export type TicketDto = {
   customerNotes: string | null;
   issueDescription: string | null;
   shelfNumber: string | null;
+  assignedToId: string | null;
+  assignedToName: string | null;
+  acceptedAt: Date | null;
   createdByName: string;
   createdAt: Date;
   deletedAt: Date | null;

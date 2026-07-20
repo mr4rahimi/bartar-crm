@@ -43,6 +43,8 @@ model User {
   deletedAt DateTime?
 
   invoices Invoice[] @relation("InvoiceCreatedBy")
+  assignedTickets     RepairTicket[]        @relation("RepairTicketAssignedTo")
+  ticketStatusChanges TicketStatusHistory[] @relation("TicketStatusChangedBy")
 
   @@map("users")
 }
@@ -196,6 +198,7 @@ model Device {
 
 enum RepairTicketStatus {
   OPEN
+  ASSIGNED
   IN_PROGRESS
   DELIVERED
   CLOSED
@@ -221,6 +224,12 @@ model RepairTicket {
   // شناسه کاربر حذف‌کننده (بدون Relation — نام در سرویس resolve می‌شود)
   deletedById         String?
 
+  // ارجاع به تعمیرکار — docs/22-repair-workflow.md
+  assignedToId        String?
+  assignedById        String?
+  assignedAt          DateTime?
+  acceptedAt          DateTime?
+
   createdById  String
 
   customer     Customer      @relation(fields: [customerId], references: [id])
@@ -230,6 +239,8 @@ model RepairTicket {
   accessories  RepairTicketAccessory[]
   issues       RepairTicketIssue[]
   invoice      Invoice?
+  assignedTo   User?                 @relation("RepairTicketAssignedTo", fields: [assignedToId], references: [id])
+  statusHistory TicketStatusHistory[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -669,4 +680,25 @@ model InvoiceItem {
   invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
   @@map("invoice_items")
+}
+
+// تاریخچه وضعیت قبض پذیرش — docs/22-repair-workflow.md
+model TicketStatusHistory {
+  id             String              @id @default(cuid())
+  ticketId       String
+  previousStatus RepairTicketStatus?
+  newStatus      RepairTicketStatus
+  action         String
+  changedById    String
+  /// تعمیرکار مقصد در اقدام‌های ارجاع
+  assignedToId   String?
+  description    String?
+
+  ticket    RepairTicket @relation(fields: [ticketId], references: [id])
+  changedBy User         @relation("TicketStatusChangedBy", fields: [changedById], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([ticketId])
+  @@map("ticket_status_histories")
 }

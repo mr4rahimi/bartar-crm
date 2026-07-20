@@ -17,6 +17,8 @@ import { useDeleteTicket } from '../hooks/use-ticket-mutations';
 import { TicketTable } from './ticket-table';
 import { TicketEditDialog } from './ticket-edit-dialog';
 import { InvoiceFormDialog } from '@/features/invoices/components/invoice-form-dialog';
+import { StatusBadge } from './ticket-table';
+import { StatusDialog } from './status-dialog';
 import { TICKET_STATUS_LABELS, TICKET_STATUSES } from '../constants/ticket-status.constants';
 import type { TicketDto } from '../types/ticket.types';
 
@@ -25,7 +27,13 @@ const STATUS_FILTERS: { value: RepairTicketStatus | 'all'; label: string }[] = [
   ...TICKET_STATUSES.map((value) => ({ value, label: TICKET_STATUS_LABELS[value] })),
 ];
 
-export function RepairsView({ permissions }: { permissions: string[] }) {
+export function RepairsView({
+  permissions,
+  currentUserId,
+}: {
+  permissions: string[];
+  currentUserId: string;
+}) {
   const { toast } = useToast();
   const deleteTicket = useDeleteTicket();
 
@@ -37,6 +45,7 @@ export function RepairsView({ permissions }: { permissions: string[] }) {
   const [editing, setEditing] = useState<TicketDto | null>(null);
   const [deleting, setDeleting] = useState<TicketDto | null>(null);
   const [invoicing, setInvoicing] = useState<TicketDto | null>(null);
+  const [statusTicket, setStatusTicket] = useState<TicketDto | null>(null);
 
   const debouncedSearch = useDebouncedValue(search, 300);
 
@@ -172,6 +181,7 @@ export function RepairsView({ permissions }: { permissions: string[] }) {
           sortDir={sortDir}
           onSort={handleSort}
           renderActions={renderActions}
+          onStatusClick={setStatusTicket}
         />
       )}
 
@@ -230,6 +240,13 @@ export function RepairsView({ permissions }: { permissions: string[] }) {
             onError: (error) => toast(error.message, 'error'),
           });
         }}
+      />
+      <StatusDialog
+        ticket={statusTicket}
+        assignedToId={statusTicket?.assignedToId ?? null}
+        currentUserId={currentUserId}
+        permissions={permissions}
+        onClose={() => setStatusTicket(null)}
       />
     </div>
   );

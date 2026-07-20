@@ -8,6 +8,7 @@ export const SMS_PATTERNS = {
   NOT_FOUND: process.env.SMS_PATTERN_NOT_FOUND ?? '',
   ADMIN: process.env.SMS_PATTERN_ADMIN ?? '',
   RECEIPT: process.env.SMS_PATTERN_RECEIPT ?? '',
+  ASSIGNED: process.env.SMS_PATTERN_ASSIGNED ?? '',
 } as const;
 
 export type SmsRule = {

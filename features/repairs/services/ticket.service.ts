@@ -181,7 +181,6 @@ export async function updateTicketService(
       data.estimatedDeliveryAt = next;
     }
   }
-  if (track('status', input.status, current.status)) data.status = input.status;
   if (track('technicianNotes', input.technicianNotes, current.technicianNotes)) {
     data.technicianNotes = input.technicianNotes;
   }
@@ -250,4 +249,10 @@ export async function restoreTicketService(ticketId: string, context: ActorConte
   });
 
   return toTicketDto(ticket);
+}
+
+/** نام یک کاربر بر اساس شناسه (برای پیام‌های اطلاع‌رسانی) */
+export async function getActorName(userId: string): Promise<string> {
+  const users = await findUsersByIds([userId]);
+  return users[0]?.name ?? 'کاربر';
 }

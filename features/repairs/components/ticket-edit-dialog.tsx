@@ -39,7 +39,6 @@ export function TicketEditDialog({ ticket, onClose }: TicketEditDialogProps) {
   const [shelfNumber, setShelfNumber] = useState('');
   const [estimatedCost, setEstimatedCost] = useState('');
   const [deliveryAt, setDeliveryAt] = useState('');
-  const [status, setStatus] = useState<RepairTicketStatus>('OPEN');
   const [accessoryIds, setAccessoryIds] = useState<string[]>([]);
   const [issueIds, setIssueIds] = useState<string[]>([]);
   const [technicianNotes, setTechnicianNotes] = useState('');
@@ -58,7 +57,6 @@ export function TicketEditDialog({ ticket, onClose }: TicketEditDialogProps) {
     setShelfNumber(ticket.shelfNumber ?? '');
     setEstimatedCost(ticket.estimatedCost != null ? String(ticket.estimatedCost) : '');
     setDeliveryAt(ticket.estimatedDeliveryAt ? new Date(ticket.estimatedDeliveryAt).toISOString() : '');
-    setStatus(ticket.status);
     setAccessoryIds(ticket.accessoryIds);
     setIssueIds(ticket.issueIds);
     setTechnicianNotes(ticket.technicianNotes ?? '');
@@ -95,7 +93,6 @@ export function TicketEditDialog({ ticket, onClose }: TicketEditDialogProps) {
         shelfNumber: shelfNumber.trim() || null,
         estimatedCost: estimatedCost.trim() || null,
         estimatedDeliveryAt: deliveryAt || null,
-        status,
         accessoryIds,
         issueIds,
         technicianNotes: technicianNotes.trim() || null,
@@ -191,18 +188,6 @@ export function TicketEditDialog({ ticket, onClose }: TicketEditDialogProps) {
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="editDelivery">موعد تحویل</Label>
             <JalaliDateInput id="editDelivery" value={deliveryAt} onChange={setDeliveryAt} />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="editStatus">وضعیت</Label>
-            <SearchableSelect
-              id="editStatus"
-              items={TICKET_STATUSES.map((value) => ({
-                id: value,
-                name: TICKET_STATUS_LABELS[value],
-              }))}
-              value={status}
-              onChange={(value) => setStatus(value as RepairTicketStatus)}
-            />
           </div>
         </div>
 

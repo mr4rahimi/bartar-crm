@@ -10,7 +10,6 @@ export const updateTicketSchema = z.object({
   shelfNumber: z.string().trim().nullable().optional(),
   estimatedCost: positiveIntField('هزینه تقریبی معتبر نیست').nullable().optional(),
   estimatedDeliveryAt: z.string().datetime().nullable().optional(),
-  status: z.enum(['OPEN', 'IN_PROGRESS', 'DELIVERED', 'CLOSED', 'CANCELLED']).optional(),
   accessoryIds: z.array(z.string()).optional(),
   issueIds: z.array(z.string()).optional(),
   technicianNotes: z.string().trim().nullable().optional(),

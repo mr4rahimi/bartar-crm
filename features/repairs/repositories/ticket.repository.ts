@@ -4,6 +4,7 @@ import type { Prisma, RepairTicketStatus } from '@prisma/client';
 const ticketInclude = {
   customer: true,
   createdBy: true,
+  assignedTo: true,
   device: { include: { brand: true, model: { include: { deviceType: true } } } },
   accessories: { include: { accessory: true } },
   issues: { include: { issue: true } },

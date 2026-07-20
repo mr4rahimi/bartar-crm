@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { cn } from '@/shared/lib/cn';
@@ -47,7 +48,7 @@ type TicketTableProps = {
   sortDir: 'asc' | 'desc';
   onSort: (field: TicketSortField) => void;
   renderActions: (ticket: TicketDto) => ReactNode;
-  /** ستون‌های اضافه برای سطل حذف‌شده‌ها */
+  onStatusClick?: (ticket: TicketDto) => void;
   showDeletedInfo?: boolean;
 };
 
@@ -58,8 +59,12 @@ export function TicketTable({
   sortDir,
   onSort,
   renderActions,
+  onStatusClick,
   showDeletedInfo = false,
 }: TicketTableProps) {
+  const router = useRouter();
+  const goDetail = (ticketId: string) => router.push('/repairs/' + ticketId);
+
   const SortIcon = ({ field }: { field?: TicketSortField }) => {
     if (!field) return null;
     if (sortBy !== field) return <ChevronsUpDown className="h-3 w-3 opacity-40" />;
@@ -68,7 +73,6 @@ export function TicketTable({
 
   return (
     <>
-      {/* ---------- دسکتاپ ---------- */}
       <div className="hidden overflow-x-auto rounded-lg border border-border bg-card lg:block">
         <table className="w-full text-right">
           <thead>
@@ -117,11 +121,27 @@ export function TicketTable({
                 <td dir="ltr" className="px-3 py-2.5 text-right text-[12px]">
                   {ticket.customer.phone}
                 </td>
-                <td className="px-3 py-2.5 text-[12.5px] font-extrabold text-primary">
-                  {ticket.ticketNumber}
+                <td className="px-3 py-2.5">
+                  <button
+                    type="button"
+                    onClick={() => goDetail(ticket.id)}
+                    className="text-[12.5px] font-extrabold text-primary hover:underline"
+                  >
+                    {ticket.ticketNumber}
+                  </button>
                 </td>
                 <td className="px-3 py-2.5">
-                  <StatusBadge ticket={ticket} />
+                  {onStatusClick ? (
+                    <button
+                      type="button"
+                      onClick={() => onStatusClick(ticket)}
+                      title="مشاهده و تغییر وضعیت"
+                    >
+                      <StatusBadge ticket={ticket} />
+                    </button>
+                  ) : (
+                    <StatusBadge ticket={ticket} />
+                  )}
                 </td>
                 <td className="px-3 py-2.5 text-[12px]">{ticket.device.deviceType ?? '—'}</td>
                 <td className="px-3 py-2.5 text-[12px]">{ticket.device.brand}</td>
@@ -148,7 +168,6 @@ export function TicketTable({
         </table>
       </div>
 
-      {/* ---------- موبایل ---------- */}
       <div className="space-y-2 lg:hidden">
         {items.map((ticket, index) => (
           <div key={ticket.id} className="rounded-lg border border-border bg-card p-3.5">
@@ -158,29 +177,39 @@ export function TicketTable({
                   <span className="text-[11px] font-bold text-muted-foreground">
                     {(startIndex + index + 1).toLocaleString('fa-IR')}
                   </span>
-                  <span className="text-[13.5px] font-extrabold text-primary">
-                    #{ticket.ticketNumber}
-                  </span>
+                  <button
+                    type="button"
+                    onClick={() => goDetail(ticket.id)}
+                    className="text-[13.5px] font-extrabold text-primary hover:underline"
+                  >
+                    {'#' + ticket.ticketNumber}
+                  </button>
                 </div>
                 <div className="mt-1 text-[13px] font-bold">{ticket.customer.name}</div>
                 <div dir="ltr" className="text-right text-[12px] text-muted-foreground">
                   {ticket.customer.phone}
                 </div>
               </div>
-              <StatusBadge ticket={ticket} />
+              {onStatusClick ? (
+                <button type="button" onClick={() => onStatusClick(ticket)}>
+                  <StatusBadge ticket={ticket} />
+                </button>
+              ) : (
+                <StatusBadge ticket={ticket} />
+              )}
             </div>
 
             <div className="mt-2 text-[12px] text-muted-foreground">
               {[ticket.device.deviceType, ticket.device.brand, ticket.device.model]
                 .filter(Boolean)
                 .join(' ')}
-              {ticket.device.serial && ` — ${ticket.device.serial}`}
+              {ticket.device.serial ? ' — ' + ticket.device.serial : ''}
             </div>
 
             <div className="mt-2 flex items-center justify-between border-t border-border pt-2">
               <span className="text-[11px] text-muted-foreground">
                 {formatDate(ticket.createdAt)} — {formatTime(ticket.createdAt)}
-                {showDeletedInfo && ticket.deletedByName && ` — حذف: ${ticket.deletedByName}`}
+                {showDeletedInfo && ticket.deletedByName ? ' — حذف: ' + ticket.deletedByName : ''}
               </span>
               <div className="flex items-center gap-0.5">{renderActions(ticket)}</div>
             </div>
