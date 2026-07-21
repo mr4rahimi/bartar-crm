@@ -45,6 +45,7 @@ model User {
   invoices Invoice[] @relation("InvoiceCreatedBy")
   assignedTickets     RepairTicket[]        @relation("RepairTicketAssignedTo")
   ticketStatusChanges TicketStatusHistory[] @relation("TicketStatusChangedBy")
+  repairNotes         RepairNote[]          @relation("RepairNoteAuthor")
 
   @@map("users")
 }
@@ -241,6 +242,7 @@ model RepairTicket {
   invoice      Invoice?
   assignedTo   User?                 @relation("RepairTicketAssignedTo", fields: [assignedToId], references: [id])
   statusHistory TicketStatusHistory[]
+  repairNotes  RepairNote[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -701,4 +703,20 @@ model TicketStatusHistory {
 
   @@index([ticketId])
   @@map("ticket_status_histories")
+}
+
+// یادداشت‌های تعمیر — چند تعمیرکار پیاپی + قابل مشاهده برای پذیرش و مدیر (docs/22)
+model RepairNote {
+  id          String @id @default(cuid())
+  ticketId    String
+  authorId    String
+  body        String
+
+  ticket RepairTicket @relation(fields: [ticketId], references: [id])
+  author User         @relation("RepairNoteAuthor", fields: [authorId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([ticketId])
+  @@map("repair_notes")
 }

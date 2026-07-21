@@ -12,7 +12,7 @@ import { PART_REQUEST_STATUS_LABELS } from '@/shared/constants/part-request-stat
 import { getModelForLinking } from '@/features/pricing/services/taxonomy.service';
 import { notifyPartRequestEventAsync } from '@/features/notifications/services/notification.service';
 import { logActivity } from '@/features/activity-logs/services/log-activity.service';
-import { AppError, NotFoundError } from '@/shared/lib/errors';
+import { AppError, NotFoundError, ForbiddenError } from '@/shared/lib/errors';
 import { toPartRequestDto, toPartRequestDetailDto } from '../utils/part-request.mapper';
 import type { CreatePartRequestInput } from '../validators/create-part-request.schema';
 import type { PartRequestQueryInput } from '../validators/part-request-query.schema';
@@ -133,6 +133,16 @@ export async function applyPartRequestActionService(
       `از وضعیت «${PART_REQUEST_STATUS_LABELS[request.status]}» امکان «${def.label}» وجود ندارد`,
       409,
     );
+  }
+
+  // گذار محدود به درخواست‌دهنده — تعمیرکاری که خودش قطعه را درخواست کرده،
+  // یا کاربری با permission (انعطاف برای ادمین) — docs/22
+  if (def.requesterOnly) {
+    const isRequester = request.createdById === context.actorId;
+    const hasPermission = context.permissions?.includes(def.permission) ?? false;
+    if (!isRequester && !hasPermission) {
+      throw new ForbiddenError('تنها درخواست‌دهنده می‌تواند تحویل قطعه را تایید کند');
+    }
   }
 
   if (def.requiresPrice && !input.price) {
