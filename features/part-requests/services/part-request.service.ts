@@ -3,6 +3,7 @@ import {
   findPartRequestById,
   createPartRequest,
   transitionPartRequest,
+  listPartRequestsByTicket,
 } from '../repositories/part-request.repository';
 import type { Prisma } from '@prisma/client';
 import { findPartById, listParts } from '../repositories/part.repository';
@@ -372,4 +373,17 @@ export async function updatePartRequestService(
   });
 
   return getPartRequestService(requestId);
+}
+
+/** خلاصه‌ی درخواست‌های قطعه‌ی یک قبض پذیرش (برای صفحه‌ی جزئیات تیکت) */
+export async function listPartRequestsByTicketService(repairTicketId: string) {
+  const items = await listPartRequestsByTicket(repairTicketId);
+  return items.map((item) => ({
+    id: item.id,
+    partName: item.part.name,
+    quantity: item.quantity,
+    status: item.status,
+    announcedPrice: item.announcedPrice,
+    createdAt: item.createdAt,
+  }));
 }

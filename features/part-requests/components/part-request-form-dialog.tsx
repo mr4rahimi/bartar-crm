@@ -157,37 +157,85 @@ export function PartRequestFormDialog({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2.5">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="deviceType">نوع دستگاه</Label>
-            <SearchableSelect
-              id="deviceType"
-              items={taxonomy.data?.deviceTypes ?? []}
-              value={deviceTypeId}
-              onChange={(id) => { setDeviceTypeId(id); setModelId(''); }}
-            />
+        {lockDevice ? (
+          <div className="rounded-md border border-border bg-muted/40 px-3.5 py-2.5">
+            <div className="text-[11px] font-bold text-muted-foreground">دستگاه (از قبض پذیرش)</div>
+            <div className="mt-1 text-[13px] font-bold">
+              {[
+                taxonomy.data?.deviceTypes.find((item) => item.id === deviceTypeId)?.name,
+                taxonomy.data?.brands.find((item) => item.id === brandId)?.name,
+                taxonomy.data?.models.find((item) => item.id === modelId)?.name,
+              ]
+                .filter(Boolean)
+                .join(' ') || '—'}
+            </div>
           </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="brand">برند</Label>
-            <SearchableSelect
-              id="brand"
-              items={taxonomy.data?.brands ?? []}
-              value={brandId}
-              onChange={(id) => { setBrandId(id); setModelId(''); }}
-              createLabel="ثبت برند"
-              onCreate={async (term) => {
-                try {
-                  const created = await quickCreate.createBrand(term);
-                  setBrandId(created.id);
-                  setModelId('');
-                  toast('برند افزوده شد');
-                } catch (error) {
-                  toast(error instanceof Error ? error.message : 'خطا', 'error');
-                }
-              }}
-            />
-          </div>
-        </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-2.5">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="deviceType">نوع دستگاه</Label>
+                <SearchableSelect
+                  id="deviceType"
+                  items={taxonomy.data?.deviceTypes ?? []}
+                  value={deviceTypeId}
+                  onChange={(id) => { setDeviceTypeId(id); setModelId(''); }}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="brand">برند</Label>
+                <SearchableSelect
+                  id="brand"
+                  items={taxonomy.data?.brands ?? []}
+                  value={brandId}
+                  onChange={(id) => { setBrandId(id); setModelId(''); }}
+                  createLabel="ثبت برند"
+                  onCreate={async (term) => {
+                    try {
+                      const created = await quickCreate.createBrand(term);
+                      setBrandId(created.id);
+                      setModelId('');
+                      toast('برند افزوده شد');
+                    } catch (error) {
+                      toast(error instanceof Error ? error.message : 'خطا', 'error');
+                    }
+                  }}
+                />
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="model">مدل</Label>
+              <SearchableSelect
+                id="model"
+                items={filteredModels}
+                value={modelId}
+                onChange={setModelId}
+                disabled={!brandId}
+                placeholder={brandId ? 'جستجو یا ثبت مدل…' : 'ابتدا برند را انتخاب کنید'}
+                emptyText="مدلی برای این برند ثبت نشده"
+                isCreating={createModel.isPending}
+                createLabel="ثبت مدل"
+                onCreate={async (term) => {
+                  if (!deviceTypeId) {
+                    toast('ابتدا نوع دستگاه را انتخاب کنید', 'error');
+                    return;
+                  }
+                  try {
+                    const created = await createModel.mutateAsync({
+                      name: term,
+                      deviceTypeId,
+                      brandId,
+                    });
+                    setModelId(created.id);
+                    toast('مدل افزوده شد');
+                  } catch (error) {
+                    toast(error instanceof Error ? error.message : 'خطا', 'error');
+                  }
+                }}
+              />
+            </div>
+          </>
+        )}
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="model">مدل</Label>

@@ -64,6 +64,7 @@ export type CreatePartRequestData = {
   isTest: boolean;
   description: string | null;
   createdById: string;
+  repairTicketId: string | null;
 };
 
 export async function createPartRequest(data: CreatePartRequestData) {
@@ -108,4 +109,13 @@ export type UpdatePartRequestData = {
 
 export async function updatePartRequest(requestId: string, data: UpdatePartRequestData) {
   return prisma.partRequest.update({ where: { id: requestId }, data });
+}
+
+/** درخواست‌های قطعه‌ی متصل به یک قبض پذیرش (docs/22) */
+export async function listPartRequestsByTicket(repairTicketId: string) {
+  return prisma.partRequest.findMany({
+    where: { repairTicketId, deletedAt: null },
+    include: detailInclude,
+    orderBy: { createdAt: 'desc' },
+  });
 }

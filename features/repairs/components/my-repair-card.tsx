@@ -1,7 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Clock, KeyRound, Smartphone } from 'lucide-react';
+import { Clock, KeyRound, PackagePlus, Smartphone } from 'lucide-react';
+import { PartRequestFormDialog } from '@/features/part-requests/components/part-request-form-dialog';
 import { StatusBadge } from './ticket-table';
 import { StatusActions } from './status-actions';
 import type { TicketDto } from '../types/ticket.types';
@@ -24,6 +26,7 @@ type MyRepairCardProps = {
 
 export function MyRepairCard({ ticket, currentUserId, permissions, onChanged }: MyRepairCardProps) {
   const router = useRouter();
+  const [isPartFormOpen, setIsPartFormOpen] = useState(false);
 
   const deviceTitle = [ticket.device.deviceType, ticket.device.brand, ticket.device.model]
     .filter(Boolean)
@@ -82,6 +85,17 @@ export function MyRepairCard({ ticket, currentUserId, permissions, onChanged }: 
         </div>
       )}
 
+      {ticket.status === 'IN_PROGRESS' && (
+        <button
+          type="button"
+          onClick={() => setIsPartFormOpen(true)}
+          className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-primary py-2 text-[12.5px] font-bold text-primary hover:bg-accent/40"
+        >
+          <PackagePlus className="h-4 w-4" />
+          درخواست قطعه برای این دستگاه
+        </button>
+      )}
+
       <div className="mt-3 border-t border-border pt-3">
         <StatusActions
           ticket={ticket}
@@ -91,6 +105,17 @@ export function MyRepairCard({ ticket, currentUserId, permissions, onChanged }: 
           onDone={onChanged}
         />
       </div>
+
+      <PartRequestFormDialog
+        open={isPartFormOpen}
+        onClose={() => setIsPartFormOpen(false)}
+        presetReceptionNumber={ticket.ticketNumber}
+        presetDeviceTypeId={ticket.device.deviceTypeId ?? undefined}
+        presetBrandId={ticket.device.brandId}
+        presetModelId={ticket.device.modelId}
+        repairTicketId={ticket.id}
+        lockDevice
+      />
     </div>
   );
 }
