@@ -53,6 +53,10 @@ export async function sendPatternSms(params: {
       | { status?: string; data?: unknown; messages?: unknown }
       | null;
 
+    if (!response.ok) {
+      console.error('[SMS DEBUG]', response.status, JSON.stringify(payload));
+    }  
+
     if (!response.ok || payload?.status !== 'success') {
       const detail =
         typeof payload?.messages === 'string'
