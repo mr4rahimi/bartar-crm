@@ -20,11 +20,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const parsed = partRequestActionSchema.safeParse(body);
     if (!parsed.success) return apiError('اطلاعات ورودی معتبر نیست', 400, zodIssues(parsed.error));
 
-    // Permission هر اکشن از تعریف ماشین وضعیت خوانده می‌شود
-    requirePermission(actor, findActionDef(parsed.data.action).permission);
+    // برای گذارهای «فقط درخواست‌دهنده»، بررسی نهایی در سرویس انجام می‌شود
+    const actionDef = findActionDef(parsed.data.action);
+    if (!actionDef.requesterOnly) {
+      requirePermission(actor, actionDef.permission);
+    }
 
     const updated = await applyPartRequestActionService(params.requestId, parsed.data, {
       actorId: actor.id,
+      permissions: actor.permissions,
       ...requestContext(request),
     });
 

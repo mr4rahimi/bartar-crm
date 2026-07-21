@@ -12,13 +12,14 @@ import { PART_REQUEST_STATUS_LABELS } from '@/shared/constants/part-request-stat
 import { getModelForLinking } from '@/features/pricing/services/taxonomy.service';
 import { notifyPartRequestEventAsync } from '@/features/notifications/services/notification.service';
 import { logActivity } from '@/features/activity-logs/services/log-activity.service';
-import { AppError, NotFoundError, ForbiddenError } from '@/shared/lib/errors';
+import { NotFoundError, AppError, ForbiddenError } from '@/shared/lib/errors';
 import { toPartRequestDto, toPartRequestDetailDto } from '../utils/part-request.mapper';
 import type { CreatePartRequestInput } from '../validators/create-part-request.schema';
 import type { PartRequestQueryInput } from '../validators/part-request-query.schema';
 import type { PartRequestActionInput } from '../validators/part-request-action.schema';
+import { pushInAppNotification } from '@/features/notifications/services/inapp.service';
 
-type ActorContext = { actorId: string; ip?: string | null; device?: string | null };
+type ActorContext = { actorId: string; permissions?: string[]; ip?: string | null; device?: string | null };
 
 export async function listPartRequestsService(query: PartRequestQueryInput) {
   const { items, total } = await listPartRequests({
@@ -135,8 +136,8 @@ export async function applyPartRequestActionService(
     );
   }
 
-  // گذار محدود به درخواست‌دهنده — تعمیرکاری که خودش قطعه را درخواست کرده،
-  // یا کاربری با permission (انعطاف برای ادمین) — docs/22
+
+  // گذار محدود به درخواست‌دهنده یا دارندگان permission (انعطاف ادمین) — docs/22
   if (def.requesterOnly) {
     const isRequester = request.createdById === context.actorId;
     const hasPermission = context.permissions?.includes(def.permission) ?? false;
@@ -245,6 +246,17 @@ export async function markPartRequestPurchased(
     announcedPrice: request.announcedPrice,
     createdById: request.createdById,
   });
+
+  // اعلان درون‌برنامه‌ای به تعمیرکار درخواست‌دهنده (اگر درخواست به تیکت وصل است) — docs/22
+  if (request.repairTicketId && request.createdById) {
+    void pushInAppNotification({
+      userId: request.createdById,
+      title: 'خرید قطعه',
+      message: `قطعه‌ی ${request.part.name} برای پذیرش ${request.receptionNumber} خریداری شد؛ برای تحویل مراجعه کنید`,
+      entityType: 'RepairTicket',
+      entityId: request.repairTicketId,
+    });
+  }
 
   return request;
 }
