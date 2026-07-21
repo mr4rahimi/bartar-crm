@@ -20,6 +20,17 @@ export const CHANGE_TYPE_LABELS: Record<ChangeType, string> = {
 
 export const CHANGELOG: ReleaseEntry[] = [
   {
+    version: '1.6.0',
+    date: '2026-07-20',
+    title: 'پنل تعمیرکار',
+    changes: [
+      { type: 'added', text: 'صفحه‌ی «دستگاه‌های من» برای تعمیرکار با تب‌های ارجاع‌شده و در دست تعمیر' },
+      { type: 'added', text: 'نمایش رمز دستگاه، ایرادات و یادداشت پذیرش روی کارت هر دستگاه' },
+      { type: 'added', text: 'انجام اقدام‌های تحویل و ارجاع مستقیم از کارت دستگاه' },
+      { type: 'added', text: 'نمایش رمز دستگاه در صفحه‌ی جزئیات قبض' },
+    ],
+  },
+  {
     version: '1.5.0',
     date: '2026-07-20',
     title: 'ارجاع به تعمیرکار و جریان تعمیر',

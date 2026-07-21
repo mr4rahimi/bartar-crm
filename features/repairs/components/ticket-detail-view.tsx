@@ -42,6 +42,7 @@ export function TicketDetailView({ ticketId, currentUserId, permissions }: Detai
     { label: 'شماره همراه', value: ticket.customer.phone, ltr: true },
     { label: 'دستگاه', value: deviceTitle },
     { label: 'سریال', value: ticket.device.serial || '—', ltr: true },
+    { label: 'رمز دستگاه', value: ticket.devicePassword || '—', ltr: true },
     { label: 'تعمیرکار فعلی', value: ticket.assignedToName ?? '—' },
     { label: 'دستگاه دست', value: holder },
     { label: 'هزینه تقریبی', value: formatPrice(ticket.estimatedCost) },

@@ -28,6 +28,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: '/pricing', label: 'قیمت‌ها', icon: Tag, permission: 'VIEW_PRICE' },
   { href: '/catalog', label: 'کاتالوگ', icon: Boxes, permission: 'EDIT_PRICE' },
   { href: '/repairs', label: 'پذیرش', icon: Wrench, permission: 'VIEW_REPAIR' },
+  { href: '/my-repairs', label: 'دستگاه‌های من', icon: Hammer, permission: 'REPAIR_DEVICE' },
   { href: '/users', label: 'کاربران', icon: Users, permission: 'VIEW_USER' },
   { href: '/roles', label: 'نقش‌ها', icon: ShieldCheck, permission: 'ASSIGN_ROLE' },
   { href: '/about', label: 'نسخه و تغییرات', icon: Info, permission: 'VIEW_SETTINGS' },

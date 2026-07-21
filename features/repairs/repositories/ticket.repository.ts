@@ -35,6 +35,7 @@ export async function listTickets(params: {
   sortBy?: 'createdAt' | 'ticketNumber' | 'customerName' | 'status';
   sortDir?: 'asc' | 'desc';
   deleted?: boolean;
+  assignedToId?: string;
 }) {
   const direction = params.sortDir ?? 'desc';
   const orderBy: Prisma.RepairTicketOrderByWithRelationInput =
@@ -48,6 +49,7 @@ export async function listTickets(params: {
 
   const where: Prisma.RepairTicketWhereInput = {
     deletedAt: params.deleted ? { not: null } : null,
+    ...(params.assignedToId && { assignedToId: params.assignedToId }),
     ...(params.status && { status: params.status }),
     ...(params.search && {
       OR: [

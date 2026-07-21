@@ -256,3 +256,20 @@ export async function getActorName(userId: string): Promise<string> {
   const users = await findUsersByIds([userId]);
   return users[0]?.name ?? 'کاربر';
 }
+
+/** دستگاه‌های ارجاع‌شده به یک تعمیرکار (پنل تعمیرکار) */
+export async function listMyRepairsService(
+  technicianId: string,
+  query: { status?: 'ASSIGNED' | 'IN_PROGRESS'; page: number; pageSize: number },
+) {
+  const { items, total } = await listTickets({
+    page: query.page,
+    pageSize: query.pageSize,
+    status: query.status,
+    assignedToId: technicianId,
+    sortBy: 'createdAt',
+    sortDir: 'desc',
+  });
+
+  return { items: items.map(toTicketDto), total, page: query.page, pageSize: query.pageSize };
+}
