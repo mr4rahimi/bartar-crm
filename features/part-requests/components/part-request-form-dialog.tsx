@@ -22,11 +22,31 @@ import { usePriceCheck } from '../hooks/use-price-check';
 import { PriceWarning } from './price-warning';
 import { QUALITY_LABELS } from '../constants/state-machine.constants';
 
-type PartRequestFormDialogProps = { open: boolean; onClose: () => void };
+
+type PartRequestFormDialogProps = {
+  open: boolean;
+  onClose: () => void;
+  /** مقادیر از پیش‌پرشده هنگام ثبت از کارت تعمیرکار (docs/22) */
+  presetReceptionNumber?: string;
+  presetModelId?: string;
+  presetDeviceTypeId?: string;
+  presetBrandId?: string;
+  repairTicketId?: string;
+  lockDevice?: boolean;
+};
 
 const QUALITIES: PartQuality[] = ['ORIGINAL', 'HIGH_COPY', 'COPY'];
 
-export function PartRequestFormDialog({ open, onClose }: PartRequestFormDialogProps) {
+export function PartRequestFormDialog({
+  open,
+  onClose,
+  presetReceptionNumber,
+  presetModelId,
+  presetDeviceTypeId,
+  presetBrandId,
+  repairTicketId,
+  lockDevice = false,
+}: PartRequestFormDialogProps) {
   const { toast } = useToast();
   const createRequest = useCreatePartRequest();
   const createModel = useCreateModel();
@@ -48,17 +68,17 @@ export function PartRequestFormDialog({ open, onClose }: PartRequestFormDialogPr
 
   useEffect(() => {
     if (!open) return;
-    setReceptionNumber('');
-    setDeviceTypeId('');
-    setBrandId('');
-    setModelId('');
+    setReceptionNumber(presetReceptionNumber ?? '');
+    setDeviceTypeId(presetDeviceTypeId ?? '');
+    setBrandId(presetBrandId ?? '');
+    setModelId(presetModelId ?? '');
     setPartId('');
     setQuality('ORIGINAL');
     setQuantity('1');
     setAnnouncedPrice('');
     setIsTest(false);
     setDescription('');
-  }, [open]);
+  }, [open, presetReceptionNumber, presetDeviceTypeId, presetBrandId, presetModelId]);
 
   const filteredModels = useMemo(() => {
     if (!taxonomy.data || !brandId) return [];
@@ -100,6 +120,7 @@ export function PartRequestFormDialog({ open, onClose }: PartRequestFormDialogPr
         quality,
         quantity,
         modelId,
+        repairTicketId,
         announcedPrice: announcedPrice.trim() || undefined,
         isTest,
         description: description.trim() || undefined,

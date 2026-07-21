@@ -14,6 +14,7 @@ export const createPartRequestSchema = z.object({
   quantity: positiveIntField('تعداد معتبر نیست').default(1),
   /** اتصال به تاکسونومی قیمت‌گذاری (docs/15) — لازمه‌ی Auto-Pricing */
   modelId: z.string().min(1).optional(),
+  repairTicketId: z.string().min(1).optional(),
   brand: z.string().trim().optional(),
   model: z.string().trim().optional(),
   announcedPrice: positiveIntField('قیمت اعلامی معتبر نیست').optional(),

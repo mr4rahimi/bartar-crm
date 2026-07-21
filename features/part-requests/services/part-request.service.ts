@@ -65,6 +65,7 @@ export async function createPartRequestService(
     isTest: input.isTest,
     description: input.description || null,
     createdById: context.actorId,
+    repairTicketId: input.repairTicketId ?? null,
   });
 
   // Workflow 1 — ثبت اولین رکورد تاریخچه
