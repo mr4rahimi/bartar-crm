@@ -31,7 +31,7 @@ export const STATUS_RULES: Partial<Record<PartRequestStatus, SmsRule>> = {
   WAITING_CUSTOMER: {
     patternCode: SMS_PATTERNS.PRICE_ANNOUNCED,
     includeCreator: true,
-    attributes: ['reception', 'part', 'price'],
+    attributes: ['reception', 'part', 'status'],
   },
   PURCHASED: {
     patternCode: SMS_PATTERNS.PURCHASED,
