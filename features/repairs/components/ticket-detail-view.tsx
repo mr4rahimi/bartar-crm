@@ -6,8 +6,9 @@ import { Skeleton } from '@/shared/components/ui/skeleton';
 import { StatusBadge } from './ticket-table';
 import { StatusActions } from './status-actions';
 import { StatusTimeline } from './status-timeline';
+import { TicketPartRequests } from './ticket-part-requests';
 import { useTicket } from '../hooks/use-tickets';
-
+import { RepairNotes } from './repair-notes';
 const formatDate = (value: Date | string | null) =>
   value ? new Date(value).toLocaleDateString('fa-IR') : '—';
 const formatDateTime = (value: Date | string | null) =>
@@ -126,6 +127,12 @@ export function TicketDetailView({ ticketId, currentUserId, permissions }: Detai
               )}
             </div>
           )}
+
+
+          <div className="rounded-lg border border-border bg-card p-4">
+            <h2 className="mb-3 text-sm font-extrabold">یادداشت‌های تعمیر</h2>
+            <RepairNotes ticketId={ticket.id} />
+          </div>
         </div>
 
         <div className="space-y-4">
@@ -143,6 +150,11 @@ export function TicketDetailView({ ticketId, currentUserId, permissions }: Detai
           <div className="rounded-lg border border-border bg-card p-4">
             <h2 className="mb-3 text-sm font-extrabold">مراحل</h2>
             <StatusTimeline ticketId={ticket.id} />
+          </div>
+
+          <div className="rounded-lg border border-border bg-card p-4">
+            <h2 className="mb-3 text-sm font-extrabold">قطعات درخواستی</h2>
+            <TicketPartRequests ticketId={ticket.id} />
           </div>
         </div>
       </div>

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Clock, KeyRound, PackagePlus, Smartphone } from 'lucide-react';
 import { PartRequestFormDialog } from '@/features/part-requests/components/part-request-form-dialog';
+import { useTicketPartRequests } from '@/features/part-requests/hooks/use-ticket-part-requests';
 import { StatusBadge } from './ticket-table';
 import { StatusActions } from './status-actions';
 import type { TicketDto } from '../types/ticket.types';
@@ -27,6 +28,7 @@ type MyRepairCardProps = {
 export function MyRepairCard({ ticket, currentUserId, permissions, onChanged }: MyRepairCardProps) {
   const router = useRouter();
   const [isPartFormOpen, setIsPartFormOpen] = useState(false);
+  const partRequests = useTicketPartRequests(ticket.id, ticket.status === 'IN_PROGRESS');
 
   const deviceTitle = [ticket.device.deviceType, ticket.device.brand, ticket.device.model]
     .filter(Boolean)
@@ -82,6 +84,17 @@ export function MyRepairCard({ ticket, currentUserId, permissions, onChanged }: 
         <div className="mt-2 rounded-md border border-border bg-background px-3 py-2 text-[12px] leading-5">
           <span className="font-bold text-muted-foreground">یادداشت پذیرش: </span>
           {ticket.technicianNotes}
+        </div>
+      )}
+
+      {ticket.status === 'IN_PROGRESS' && partRequests.data && partRequests.data.length > 0 && (
+        <div className="mt-2.5 rounded-md border border-border bg-background px-3 py-2 text-[11.5px]">
+          <span className="font-bold text-muted-foreground">قطعات: </span>
+          {partRequests.data
+            .map((item) => item.partName)
+            .slice(0, 3)
+            .join('، ')}
+          {partRequests.data.length > 3 && ` و ${(partRequests.data.length - 3).toLocaleString('fa-IR')} مورد دیگر`}
         </div>
       )}
 
