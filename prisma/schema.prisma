@@ -46,6 +46,7 @@ model User {
   assignedTickets     RepairTicket[]        @relation("RepairTicketAssignedTo")
   ticketStatusChanges TicketStatusHistory[] @relation("TicketStatusChangedBy")
   repairNotes         RepairNote[]          @relation("RepairNoteAuthor")
+  qualityChecks       QualityCheck[]        @relation("QualityCheckedBy")
 
   @@map("users")
 }
@@ -201,6 +202,10 @@ enum RepairTicketStatus {
   OPEN
   ASSIGNED
   IN_PROGRESS
+  QUALITY_CHECK
+  READY_FOR_DELIVERY
+  UNREPAIRABLE
+  DELIVERED_TO_CUSTOMER
   DELIVERED
   CLOSED
   CANCELLED
@@ -230,6 +235,12 @@ model RepairTicket {
   assignedById        String?
   assignedAt          DateTime?
   acceptedAt          DateTime?
+  // کنترل کیفیت و تحویل — docs/22
+  qualityCheckById    String?
+  receivedByReceptionAt DateTime?
+  customerNotifiedAt  DateTime?
+  deliveredToCustomerAt DateTime?
+  unrepairableReason  String?
 
   createdById  String
 
@@ -243,6 +254,7 @@ model RepairTicket {
   assignedTo   User?                 @relation("RepairTicketAssignedTo", fields: [assignedToId], references: [id])
   statusHistory TicketStatusHistory[]
   repairNotes  RepairNote[]
+  qualityChecks QualityCheck[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -719,4 +731,21 @@ model RepairNote {
 
   @@index([ticketId])
   @@map("repair_notes")
+}
+
+// کنترل کیفیت تعمیر — docs/22 (فعلاً متنی؛ بعداً چک‌لیست ساختاریافته بر اساس ایراد/مدل)
+model QualityCheck {
+  id          String  @id @default(cuid())
+  ticketId    String
+  checkedById String
+  notes       String
+  passed      Boolean
+
+  ticket    RepairTicket @relation(fields: [ticketId], references: [id])
+  checkedBy User         @relation("QualityCheckedBy", fields: [checkedById], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([ticketId])
+  @@map("quality_checks")
 }

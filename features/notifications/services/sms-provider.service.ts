@@ -1,7 +1,7 @@
 const BASE_URL = process.env.IRANPAYAMAK_BASE_URL ?? 'https://api.iranpayamak.com';
 const API_KEY = process.env.IRANPAYAMAK_API_KEY ?? '';
 const LINE_NUMBER = process.env.IRANPAYAMAK_LINE_NUMBER ?? '';
-const NUMBER_FORMAT = process.env.IRANPAYAMAK_NUMBER_FORMAT ?? 'en';
+const NUMBER_FORMAT = process.env.IRANPAYAMAK_NUMBER_FORMAT ?? 'english';
 const IS_ENABLED = process.env.SMS_ENABLED === 'true';
 const TIMEOUT_MS = 10_000;
 
@@ -52,10 +52,6 @@ export async function sendPatternSms(params: {
     const payload = (await response.json().catch(() => null)) as
       | { status?: string; data?: unknown; messages?: unknown }
       | null;
-
-    if (!response.ok) {
-      console.error('[SMS DEBUG]', response.status, JSON.stringify(payload));
-    }  
 
     if (!response.ok || payload?.status !== 'success') {
       const detail =

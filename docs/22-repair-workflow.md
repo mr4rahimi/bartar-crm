@@ -93,6 +93,41 @@
 هر یادداشت با نام نویسنده و زمان ثبت می‌شود (مثلاً تصمیم مشترک مشتری و تعمیرکار در تماس تلفنی).
 دسترسی نوشتن و خواندن: `VIEW_REPAIR`.
 
+## تکمیل تعمیر، کنترل کیفیت و تحویل (2026/07/21)
+
+### وضعیت‌های جدید
+QUALITY_CHECK (کنترل کیفیت) | READY_FOR_DELIVERY (آماده تحویل) |
+UNREPAIRABLE (عدم تعمیر) | DELIVERED_TO_CUSTOMER (تحویل به مشتری)
+
+### گذارها
+| اقدام | از | به | مجاز برای | ورودی |
+|---|---|---|---|---|
+| MARK_REPAIRED | IN_PROGRESS | QUALITY_CHECK | تعمیرکار فعلی | کنترل‌کننده (خودم یا تعمیرکار دیگر) |
+| PASS_QUALITY | QUALITY_CHECK | READY_FOR_DELIVERY | کنترل‌کننده | موارد کنترل‌شده (اجباری) |
+| FAIL_QUALITY | QUALITY_CHECK | IN_PROGRESS | کنترل‌کننده | ایراد (اجباری) |
+| MARK_UNREPAIRABLE | IN_PROGRESS | UNREPAIRABLE | تعمیرکار فعلی | دلیل (اجباری) |
+| RECEIVE_BY_RECEPTION | READY_FOR_DELIVERY / UNREPAIRABLE | (بدون تغییر) | ASSIGN_REPAIR | پرسش پیامک مشتری |
+| DELIVER_TO_CUSTOMER | READY_FOR_DELIVERY / UNREPAIRABLE | DELIVERED_TO_CUSTOMER | ASSIGN_REPAIR | — |
+
+**کنترل کیفیت الزامی است**: دستگاه تعمیرشده بدون ثبت کنترل کیفیت به پذیرش نمی‌رسد،
+چه کنترل توسط خود تعمیرکار باشد چه تعمیرکار دیگر.
+
+### مدل QualityCheck
+`{ ticketId, checkedById, notes, passed, createdAt }` — فعلاً متنی؛
+در فاز بعد چک‌لیست ساختاریافته بر اساس ایرادات و مدل دستگاه نمایش داده می‌شود
+و تعمیرکار پس از تست موفق هر مورد را تایید می‌کند.
+
+### اطلاع‌رسانی
+| رویداد | گیرنده | کانال |
+|---|---|---|
+| MARK_REPAIRED (به تعمیرکار دیگر) | کنترل‌کننده | پیامک + اعلان |
+| PASS_QUALITY | دارندگان ASSIGN_REPAIR | اعلان |
+| FAIL_QUALITY | تعمیرکار | اعلان |
+| MARK_UNREPAIRABLE | دارندگان ASSIGN_REPAIR | اعلان |
+| RECEIVE_BY_RECEPTION (با تایید پذیرش) | **مشتری** | پیامک آماده‌بودن دستگاه |
+
+پترن پیامک آماده‌بودن: `SMS_PATTERN_READY` — متغیرها `name`, `reception`
+
 ## فازهای بعد
 پنل تعمیرکار (دستگاه‌های من) | تایید تحویل قطعه توسط تعمیرکار پس از خرید |
 وضعیت‌های «منتظر قطعه»، «آماده تحویل»، «تحویل شد» | پیامک اطلاع‌رسانی به مشتری | صفحه لاگ فعالیت‌ها

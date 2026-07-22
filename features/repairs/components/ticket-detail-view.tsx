@@ -9,6 +9,7 @@ import { StatusTimeline } from './status-timeline';
 import { TicketPartRequests } from './ticket-part-requests';
 import { useTicket } from '../hooks/use-tickets';
 import { RepairNotes } from './repair-notes';
+import { QualityCheckList } from './quality-check-list';
 const formatDate = (value: Date | string | null) =>
   value ? new Date(value).toLocaleDateString('fa-IR') : '—';
 const formatDateTime = (value: Date | string | null) =>
@@ -155,6 +156,11 @@ export function TicketDetailView({ ticketId, currentUserId, permissions }: Detai
           <div className="rounded-lg border border-border bg-card p-4">
             <h2 className="mb-3 text-sm font-extrabold">قطعات درخواستی</h2>
             <TicketPartRequests ticketId={ticket.id} />
+          </div>
+
+          <div className="rounded-lg border border-border bg-card p-4">
+            <h2 className="mb-3 text-sm font-extrabold">کنترل کیفیت</h2>
+            <QualityCheckList ticketId={ticket.id} />
           </div>
         </div>
       </div>

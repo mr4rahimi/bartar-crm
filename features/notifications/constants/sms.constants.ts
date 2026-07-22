@@ -9,6 +9,7 @@ export const SMS_PATTERNS = {
   ADMIN: process.env.SMS_PATTERN_ADMIN ?? '',
   RECEIPT: process.env.SMS_PATTERN_RECEIPT ?? '',
   ASSIGNED: process.env.SMS_PATTERN_ASSIGNED ?? '',
+  READY: process.env.SMS_PATTERN_READY ?? '',
 } as const;
 
 export type SmsRule = {

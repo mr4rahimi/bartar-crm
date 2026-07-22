@@ -46,6 +46,8 @@ export function useApplyTicketAction() {
       action: TicketAction;
       technicianId?: string;
       reason?: string;
+      qualityNotes?: string;
+      notifyCustomer?: boolean;
     }) =>
       apiFetch<TicketDto>(`/api/v1/repair-tickets/${ticketId}/actions`, {
         method: 'POST',
@@ -56,6 +58,8 @@ export function useApplyTicketAction() {
       queryClient.invalidateQueries({ queryKey: ['repair-ticket'] });
       queryClient.invalidateQueries({ queryKey: ['ticket-history'] });
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['quality-checks'] });
+      queryClient.invalidateQueries({ queryKey: ['my-repairs'] });
     },
   });
 }

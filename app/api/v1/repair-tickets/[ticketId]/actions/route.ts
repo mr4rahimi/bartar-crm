@@ -7,9 +7,23 @@ import { handleApiError } from '@/shared/lib/handle-api-error';
 import { requestContext } from '@/shared/lib/request-context';
 
 const actionSchema = z.object({
-  action: z.enum(['ASSIGN', 'REASSIGN', 'ACCEPT', 'RETURN_TO_RECEPTION', 'HANDOFF']),
+  action: z.enum([
+    'ASSIGN',
+    'REASSIGN',
+    'ACCEPT',
+    'RETURN_TO_RECEPTION',
+    'HANDOFF',
+    'MARK_REPAIRED',
+    'PASS_QUALITY',
+    'FAIL_QUALITY',
+    'MARK_UNREPAIRABLE',
+    'RECEIVE_BY_RECEPTION',
+    'DELIVER_TO_CUSTOMER',
+  ]),
   technicianId: z.string().min(1).optional(),
   reason: z.string().trim().optional(),
+  qualityNotes: z.string().trim().optional(),
+  notifyCustomer: z.boolean().optional(),
 });
 
 type RouteParams = { params: { ticketId: string } };

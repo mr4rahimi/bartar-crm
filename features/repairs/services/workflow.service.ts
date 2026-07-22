@@ -1,5 +1,3 @@
-import { notifyRepairEventAsync } from './repair-notify.service';
-import { getActorName } from './ticket.service';
 import type { Prisma, RepairTicketStatus } from '@prisma/client';
 import {
   listTechnicians,
@@ -8,9 +6,12 @@ import {
   listStatusHistory,
 } from '../repositories/workflow.repository';
 import { findAnyTicketById } from '../repositories/ticket.repository';
+import { createQualityCheck } from '../repositories/quality-check.repository';
 import { logActivity } from '@/features/activity-logs/services/log-activity.service';
 import { NotFoundError, AppError, ForbiddenError } from '@/shared/lib/errors';
 import { toTicketDto } from '../utils/ticket.mapper';
+import { notifyRepairEventAsync } from './repair-notify.service';
+import { getActorName } from './ticket.service';
 import { TICKET_ACTIONS, type TicketAction } from '../constants/workflow.constants';
 
 type ActorContext = {
@@ -66,6 +67,10 @@ export type ApplyTicketActionInput = {
   action: TicketAction;
   technicianId?: string;
   reason?: string;
+  /** موارد کنترل‌شده — اقدام PASS_QUALITY */
+  qualityNotes?: string;
+  /** ارسال پیامک آماده‌بودن به مشتری — اقدام RECEIVE_BY_RECEPTION */
+  notifyCustomer?: boolean;
 };
 
 export async function applyTicketActionService(
@@ -80,12 +85,11 @@ export async function applyTicketActionService(
   const def = TICKET_ACTIONS.find((item) => item.action === input.action);
   if (!def) throw new AppError('اقدام نامعتبر است', 400);
 
-  // گذار مجاز از وضعیت فعلی؟
   if (!def.from.includes(ticket.status)) {
     throw new AppError('این اقدام در وضعیت فعلی مجاز نیست', 409);
   }
 
-  // مجوز: تعمیرکارِ همین تیکت یا Permission
+  // مجوز: نگهدارنده‌ی فعلی یا Permission
   const isAssignee = ticket.assignedToId === context.actorId;
   const hasPermission = def.permission ? context.permissions.includes(def.permission) : false;
   const allowed = def.assigneeOnly
@@ -98,28 +102,55 @@ export async function applyTicketActionService(
   if (def.requiresReason && !input.reason?.trim()) {
     throw new AppError('ذکر علت الزامی است', 400);
   }
+  if (def.requiresQualityNotes && !input.qualityNotes?.trim()) {
+    throw new AppError('ثبت موارد کنترل‌شده الزامی است', 400);
+  }
 
-  // ساخت داده‌ی به‌روزرسانی بر اساس نوع اقدام
-  const ticketData: Prisma.RepairTicketUpdateInput = { status: def.to };
+  // وضعیت مقصد: بعضی اقدام‌ها وضعیت را تغییر نمی‌دهند (مثل تحویل به پذیرش)
+  const newStatus = def.to ?? ticket.status;
+
+  const ticketData: Prisma.RepairTicketUpdateInput = { status: newStatus };
   let assignedToId: string | null = ticket.assignedToId;
   let assignedToName: string | null = null;
 
+  // انتخاب تعمیرکار مقصد (اجباری یا اختیاری)
   if (def.requiresTechnician) {
-    const technician = input.technicianId
-      ? await findTechnicianById(input.technicianId)
-      : null;
-    if (!technician) throw new AppError('تعمیرکار انتخاب‌شده معتبر نیست', 400);
+    if (input.technicianId) {
+      const technician = await findTechnicianById(input.technicianId);
+      if (!technician) throw new AppError('تعمیرکار انتخاب‌شده معتبر نیست', 400);
 
-    assignedToId = technician.id;
-    assignedToName = technician.name;
-    ticketData.assignedTo = { connect: { id: technician.id } };
-    ticketData.assignedById = context.actorId;
-    ticketData.assignedAt = new Date();
-    ticketData.acceptedAt = null; // ارجاع جدید → تحویل‌نگرفته
+      assignedToId = technician.id;
+      assignedToName = technician.name;
+      ticketData.assignedTo = { connect: { id: technician.id } };
+      ticketData.assignedById = context.actorId;
+      ticketData.assignedAt = new Date();
+      // ارجاع به شخص دیگر یعنی هنوز تحویل نگرفته
+      if (technician.id !== context.actorId) ticketData.acceptedAt = null;
+    } else if (!def.technicianOptional) {
+      throw new AppError('انتخاب تعمیرکار الزامی است', 400);
+    }
+    // technicianOptional و خالی → کنترل کیفیت توسط خود کاربر، تعمیرکار عوض نمی‌شود
   }
 
   if (input.action === 'ACCEPT') {
     ticketData.acceptedAt = new Date();
+  }
+
+  if (input.action === 'MARK_REPAIRED') {
+    ticketData.qualityCheckById = input.technicianId ?? context.actorId;
+  }
+
+  if (input.action === 'MARK_UNREPAIRABLE') {
+    ticketData.unrepairableReason = input.reason?.trim() ?? null;
+  }
+
+  if (input.action === 'RECEIVE_BY_RECEPTION') {
+    ticketData.receivedByReceptionAt = new Date();
+    if (input.notifyCustomer) ticketData.customerNotifiedAt = new Date();
+  }
+
+  if (input.action === 'DELIVER_TO_CUSTOMER') {
+    ticketData.deliveredToCustomerAt = new Date();
   }
 
   if (input.action === 'RETURN_TO_RECEPTION') {
@@ -132,13 +163,23 @@ export async function applyTicketActionService(
   const updated = await applyTransition({
     ticketId,
     previousStatus: ticket.status,
-    newStatus: def.to,
+    newStatus,
     action: def.action,
     changedById: context.actorId,
     assignedToId,
-    description: input.reason?.trim() || null,
+    description: input.reason?.trim() || input.qualityNotes?.trim() || null,
     ticketData,
   });
+
+  // ثبت رکورد کنترل کیفیت
+  if (input.action === 'PASS_QUALITY' || input.action === 'FAIL_QUALITY') {
+    await createQualityCheck({
+      ticketId,
+      checkedById: context.actorId,
+      notes: (input.qualityNotes ?? input.reason ?? '').trim(),
+      passed: input.action === 'PASS_QUALITY',
+    });
+  }
 
   await logActivity({
     userId: context.actorId,
@@ -147,32 +188,41 @@ export async function applyTicketActionService(
     entityId: ticketId,
     previousValue: { status: ticket.status } as never,
     newValue: {
-      status: def.to,
+      status: newStatus,
       ...(assignedToName && { assignedTo: assignedToName }),
       ...(input.reason?.trim() && { reason: input.reason.trim() }),
+      ...(input.qualityNotes?.trim() && { qualityNotes: input.qualityNotes.trim() }),
+      ...(input.action === 'RECEIVE_BY_RECEPTION' && { customerNotified: Boolean(input.notifyCustomer) }),
     } as never,
     ip: context.ip,
     device: context.device,
   });
 
+  const actorName = await getActorName(context.actorId);
+  const deviceTitle = [
+    updated.device.model.deviceType?.name,
+    updated.device.brand.name,
+    updated.device.model.name,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   notifyRepairEventAsync({
     action: def.action,
     ticketId,
     ticketNumber: ticket.ticketNumber,
-    deviceTitle: [
-      updated.device.model.deviceType?.name,
-      updated.device.brand.name,
-      updated.device.model.name,
-    ]
-      .filter(Boolean)
-      .join(' '),
+    deviceTitle,
     assignedToId,
     assignedToName,
-    assignedToPhone: assignedToName ? (await findTechnicianById(assignedToId!))?.phone ?? null : null,
+    assignedToPhone:
+      assignedToName && assignedToId ? (await findTechnicianById(assignedToId))?.phone ?? null : null,
     actorId: context.actorId,
-    actorName: await getActorName(context.actorId),
+    actorName,
     assignedById: ticket.assignedById,
     reason: input.reason?.trim() || null,
+    customerName: updated.customer.name,
+    customerPhone: updated.customer.phone,
+    notifyCustomer: Boolean(input.notifyCustomer),
   });
 
   return { ticket: toTicketDto(updated), assignedToId, assignedToName, action: def.action };
