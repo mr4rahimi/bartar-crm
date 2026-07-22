@@ -78,3 +78,13 @@ export async function listStatusHistory(ticketId: string) {
     orderBy: { createdAt: 'desc' },
   });
 }
+
+/** تیکت‌هایی که این کاربر قبلاً روی آن‌ها کار کرده (تب تاریخچه پنل تعمیرکار) */
+export async function listTicketIdsTouchedBy(userId: string) {
+  const rows = await prisma.ticketStatusHistory.findMany({
+    where: { OR: [{ changedById: userId }, { assignedToId: userId }] },
+    select: { ticketId: true },
+    distinct: ['ticketId'],
+  });
+  return rows.map((row) => row.ticketId);
+}

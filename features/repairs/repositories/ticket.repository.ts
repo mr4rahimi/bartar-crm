@@ -36,6 +36,12 @@ export async function listTickets(params: {
   sortDir?: 'asc' | 'desc';
   deleted?: boolean;
   assignedToId?: string;
+  /** چند وضعیت هم‌زمان (تب‌های پنل تعمیرکار) */
+  statuses?: RepairTicketStatus[];
+  /** محدود کردن به فهرست مشخصی از تیکت‌ها (تاریخچه تعمیرکار) */
+  ticketIds?: string[];
+  /** حذف وضعیت‌های مشخص از نتیجه */
+  excludeStatuses?: RepairTicketStatus[];
 }) {
   const direction = params.sortDir ?? 'desc';
   const orderBy: Prisma.RepairTicketOrderByWithRelationInput =
@@ -50,7 +56,10 @@ export async function listTickets(params: {
   const where: Prisma.RepairTicketWhereInput = {
     deletedAt: params.deleted ? { not: null } : null,
     ...(params.assignedToId && { assignedToId: params.assignedToId }),
+    ...(params.ticketIds && { id: { in: params.ticketIds } }),
     ...(params.status && { status: params.status }),
+    ...(params.statuses?.length && { status: { in: params.statuses } }),
+    ...(params.excludeStatuses?.length && { status: { notIn: params.excludeStatuses } }),
     ...(params.search && {
       OR: [
         { ticketNumber: { contains: params.search } },

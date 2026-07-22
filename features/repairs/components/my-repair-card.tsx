@@ -87,6 +87,14 @@ export function MyRepairCard({ ticket, currentUserId, permissions, onChanged }: 
         </div>
       )}
 
+      {(ticket.status === 'READY_FOR_DELIVERY' || ticket.status === 'UNREPAIRABLE') && (
+        <div className="mt-2.5 rounded-md border border-primary/40 bg-accent/40 px-3 py-2 text-[11.5px] leading-5 text-accent-foreground">
+          {ticket.status === 'UNREPAIRABLE'
+            ? 'این دستگاه تعمیر نشد؛ آن را به پذیرش تحویل دهید.'
+            : 'کنترل کیفیت تایید شد؛ دستگاه را به پذیرش تحویل دهید.'}
+        </div>
+      )}
+
       {ticket.status === 'IN_PROGRESS' && partRequests.data && partRequests.data.length > 0 && (
         <div className="mt-2.5 rounded-md border border-border bg-background px-3 py-2 text-[11.5px]">
           <span className="font-bold text-muted-foreground">قطعات: </span>

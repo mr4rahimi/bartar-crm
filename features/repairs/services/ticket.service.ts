@@ -8,6 +8,7 @@ import {
 import { createCustomerService } from './customer.service';
 import { findCustomerById } from '../repositories/customer.repository';
 import { notifyTicketCreatedAsync } from '@/features/notifications/services/notification.service';
+import { listTicketIdsTouchedBy } from '../repositories/workflow.repository';
 import { logActivity } from '@/features/activity-logs/services/log-activity.service';
 import { NotFoundError } from '@/shared/lib/errors';
 import { toTicketDto } from '../utils/ticket.mapper';
@@ -257,15 +258,59 @@ export async function getActorName(userId: string): Promise<string> {
   return users[0]?.name ?? 'کاربر';
 }
 
-/** دستگاه‌های ارجاع‌شده به یک تعمیرکار (پنل تعمیرکار) */
+/** تب‌های پنل تعمیرکار — docs/22 */
+export type MyRepairsTab = 'ASSIGNED' | 'IN_PROGRESS' | 'QUALITY_CHECK' | 'HANDOVER' | 'HISTORY';
+
+const TAB_STATUSES = {
+  ASSIGNED: ['ASSIGNED'],
+  IN_PROGRESS: ['IN_PROGRESS'],
+  QUALITY_CHECK: ['QUALITY_CHECK'],
+  HANDOVER: ['READY_FOR_DELIVERY', 'UNREPAIRABLE'],
+} as const;
+
+/** دستگاه‌های یک تعمیرکار بر اساس تب (پنل تعمیرکار) */
 export async function listMyRepairsService(
   technicianId: string,
-  query: { status?: 'ASSIGNED' | 'IN_PROGRESS'; page: number; pageSize: number },
+  query: { tab: MyRepairsTab; page: number; pageSize: number },
 ) {
+  // تاریخچه: هر تیکتی که این کاربر رویش کار کرده و اکنون در تب‌های فعال نیست
+  if (query.tab === 'HISTORY') {
+    const ticketIds = await listTicketIdsTouchedBy(technicianId);
+    if (ticketIds.length === 0) {
+      return { items: [], total: 0, page: query.page, pageSize: query.pageSize };
+    }
+
+    const { items, total } = await listTickets({
+      page: query.page,
+      pageSize: query.pageSize,
+      ticketIds,
+      sortBy: 'createdAt',
+      sortDir: 'desc',
+    });
+
+    // دستگاه‌هایی که هنوز دست خودش است در تب‌های فعال دیده می‌شوند
+    const active = items.filter(
+      (item) =>
+        !(
+          item.assignedToId === technicianId &&
+          ['ASSIGNED', 'IN_PROGRESS', 'QUALITY_CHECK', 'READY_FOR_DELIVERY', 'UNREPAIRABLE'].includes(
+            item.status,
+          )
+        ),
+    );
+
+    return {
+      items: active.map(toTicketDto),
+      total: total - (items.length - active.length),
+      page: query.page,
+      pageSize: query.pageSize,
+    };
+  }
+
   const { items, total } = await listTickets({
     page: query.page,
     pageSize: query.pageSize,
-    status: query.status,
+    statuses: [...TAB_STATUSES[query.tab]],
     assignedToId: technicianId,
     sortBy: 'createdAt',
     sortDir: 'desc',
