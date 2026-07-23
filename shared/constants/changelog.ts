@@ -20,6 +20,16 @@ export const CHANGE_TYPE_LABELS: Record<ChangeType, string> = {
 
 export const CHANGELOG: ReleaseEntry[] = [
   {
+    version: '1.10.0',
+    date: '2026-07-23',
+    title: 'قبض تحویل دستگاه',
+    changes: [
+      { type: 'added', text: 'چاپ اختیاری قبض تحویل هنگام تحویل دستگاه به مشتری' },
+      { type: 'added', text: 'درج نتیجه‌ی تعمیر، متعلقات، فاکتور و مدت ضمانت روی قبض' },
+      { type: 'added', text: 'امکان چاپ مجدد قبض تحویل از صفحه‌ی جزئیات' },
+    ],
+  },
+  {
     version: '1.9.0',
     date: '2026-07-23',
     title: 'پروفایل کاربری',

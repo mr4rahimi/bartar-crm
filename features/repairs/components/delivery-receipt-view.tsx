@@ -21,7 +21,7 @@ type DeliveryReceiptProps = {
 };
 
 export function DeliveryReceiptView({ ticket, delivererName, invoice }: DeliveryReceiptProps) {
-  const isRepaired = ticket.status !== 'UNREPAIRABLE';
+    const isRepaired = ticket.status !== 'UNREPAIRABLE' && !ticket.unrepairableReason;
 
   const deviceTitle = [ticket.device.deviceType, ticket.device.brand, ticket.device.model]
     .filter(Boolean)
