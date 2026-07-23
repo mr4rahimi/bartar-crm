@@ -20,6 +20,18 @@ export const CHANGE_TYPE_LABELS: Record<ChangeType, string> = {
 
 export const CHANGELOG: ReleaseEntry[] = [
   {
+    version: '1.9.0',
+    date: '2026-07-23',
+    title: 'پروفایل کاربری',
+    changes: [
+      { type: 'added', text: 'صفحه‌ی پروفایل برای همه‌ی کاربران با امکان ویرایش نام' },
+      { type: 'added', text: 'بارگذاری و حذف تصویر پروفایل' },
+      { type: 'added', text: 'تغییر رمز عبور توسط خود کاربر با تایید رمز فعلی' },
+      { type: 'added', text: 'خروج خودکار از سایر دستگاه‌ها پس از تغییر رمز' },
+      { type: 'added', text: 'دسترسی سریع به پروفایل از طریق آواتار در بالای صفحه' },
+    ],
+  },
+  {
     version: '1.8.0',
     date: '2026-07-21',
     title: 'تکمیل تعمیر، کنترل کیفیت و تحویل',
