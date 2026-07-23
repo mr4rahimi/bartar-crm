@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 import { NAV_ITEMS } from '@/shared/constants/navigation';
 import { NotificationBell } from '@/features/notifications/components/notification-bell';
+import { HeaderAvatar } from '@/features/users/components/header-avatar';
 import { Sidebar } from './sidebar';
 import { BottomNav } from './bottom-nav';
 
@@ -29,15 +30,16 @@ export function AppShell({ userName, permissions, logoutSlot, children }: AppShe
           ب
         </div>
         <div className="text-sm font-extrabold">برتر CRM</div>
-        <div className="mr-auto">
+        <div className="mr-auto flex items-center gap-1.5">
           <NotificationBell />
+          <HeaderAvatar />
         </div>
       </header>
 
       <div className="md:pr-64">
         {/* هدر دسکتاپ — فقط زنگوله */}
-        <header className="sticky top-0 z-30 hidden h-14 items-center justify-end border-b border-border bg-card px-6 md:flex">
-          <NotificationBell />
+        <header className="sticky top-0 z-30 hidden h-14 items-center justify-end gap-2 border-b border-border bg-card px-6 md:flex">          <NotificationBell />
+          <HeaderAvatar />
         </header>
 
         <main className="p-4 pb-24 md:p-6">{children}</main>
