@@ -45,6 +45,8 @@ export function toTicketDto(ticket: TicketWithRelations): TicketDto {
     assignedToId: ticket.assignedToId,
     assignedToName: ticket.assignedTo?.name ?? null,
     acceptedAt: ticket.acceptedAt,
+    unrepairableReason: ticket.unrepairableReason,
+    deliveredToCustomerAt: ticket.deliveredToCustomerAt,
     createdAt: ticket.createdAt,
     deletedAt: ticket.deletedAt,
     deletedByName: null,

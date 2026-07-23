@@ -32,6 +32,8 @@ export type TicketActionDef = {
   requiresQualityNotes?: boolean;
   /** پرسش ارسال پیامک آماده‌بودن به مشتری */
   asksCustomerSms?: boolean;
+  /** پرسش چاپ قبض تحویل */
+  asksPrintReceipt?: boolean;
   tone: 'primary' | 'default' | 'destructive';
 };
 
@@ -138,6 +140,7 @@ export const TICKET_ACTIONS: TicketActionDef[] = [
     from: ['READY_FOR_DELIVERY', 'UNREPAIRABLE'],
     to: 'DELIVERED_TO_CUSTOMER',
     permission: 'ASSIGN_REPAIR',
+    asksPrintReceipt: true,
     tone: 'primary',
   },
 ];

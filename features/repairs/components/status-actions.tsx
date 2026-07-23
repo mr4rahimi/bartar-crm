@@ -38,12 +38,14 @@ export function StatusActions({
   const [reason, setReason] = useState('');
   const [qualityNotes, setQualityNotes] = useState('');
   const [notifyCustomer, setNotifyCustomer] = useState(true);
+  const [printReceipt, setPrintReceipt] = useState(true);
 
   const needsDialog =
     pending?.requiresTechnician ||
     pending?.requiresReason ||
     pending?.requiresQualityNotes ||
-    pending?.asksCustomerSms;
+    pending?.asksCustomerSms ||
+    pending?.asksPrintReceipt;
 
   const technicians = useTechnicians(Boolean(pending?.requiresTechnician));
 
@@ -63,6 +65,7 @@ export function StatusActions({
     setReason('');
     setQualityNotes('');
     setNotifyCustomer(true);
+    setPrintReceipt(true);
   };
 
   const run = (
@@ -72,6 +75,7 @@ export function StatusActions({
       reason?: string;
       qualityNotes?: string;
       notifyCustomer?: boolean;
+      printReceipt?: boolean;
     },
   ) => {
     applyAction.mutate(
@@ -79,6 +83,9 @@ export function StatusActions({
       {
         onSuccess: () => {
           toast(`${def.label} انجام شد`);
+          if (def.asksPrintReceipt && payload?.printReceipt) {
+            window.open(`/repairs/${ticket.id}/delivery-print`, '_blank');
+          }
           reset();
           onDone?.();
         },
@@ -93,7 +100,14 @@ export function StatusActions({
     setReason('');
     setQualityNotes('');
     setNotifyCustomer(true);
-    if (def.requiresTechnician || def.requiresReason || def.requiresQualityNotes || def.asksCustomerSms) {
+    setPrintReceipt(true);
+    if (
+      def.requiresTechnician ||
+      def.requiresReason ||
+      def.requiresQualityNotes ||
+      def.asksCustomerSms ||
+      def.asksPrintReceipt
+    ) {
       setPending(def);
     } else {
       run(def);
@@ -130,6 +144,7 @@ export function StatusActions({
       reason: reason.trim() || undefined,
       qualityNotes: qualityNotes.trim() || undefined,
       ...(pending.asksCustomerSms && { notifyCustomer }),
+      ...(pending.asksPrintReceipt && { printReceipt }),
     });
   };
 
@@ -234,6 +249,20 @@ export function StatusActions({
                     : 'دلیل را بنویسید…'
                 }
               />
+            </div>
+          )}
+
+          {pending?.asksPrintReceipt && (
+            <div className="flex items-center justify-between rounded-md border border-border bg-background px-3.5 py-3">
+              <div>
+                <Label htmlFor="printReceipt" className="text-[12.5px]">
+                  چاپ قبض تحویل
+                </Label>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  رسید امضای مشتری برای بایگانی مجموعه
+                </p>
+              </div>
+              <Switch id="printReceipt" checked={printReceipt} onCheckedChange={setPrintReceipt} />
             </div>
           )}
 

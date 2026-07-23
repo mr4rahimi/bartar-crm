@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Printer } from 'lucide-react';
+import { ArrowRight, FileCheck, Printer } from 'lucide-react';
 import { Skeleton } from '@/shared/components/ui/skeleton';
 import { StatusBadge } from './ticket-table';
 import { StatusActions } from './status-actions';
@@ -75,6 +75,19 @@ export function TicketDetailView({ ticketId, currentUserId, permissions }: Detai
         >
           <Printer className="h-4 w-4" />
         </button>
+        {(ticket.status === 'DELIVERED_TO_CUSTOMER' ||
+          ticket.status === 'READY_FOR_DELIVERY' ||
+          ticket.status === 'UNREPAIRABLE') && (
+          <button
+            type="button"
+            onClick={() => window.open(`/repairs/${ticket.id}/delivery-print`, '_blank')}
+            className="rounded-md border border-border p-1.5 text-muted-foreground hover:bg-muted"
+            title="چاپ قبض تحویل"
+            aria-label="چاپ قبض تحویل"
+          >
+            <FileCheck className="h-4 w-4" />
+          </button>
+        )}
         <StatusBadge ticket={ticket} />
       </div>
 

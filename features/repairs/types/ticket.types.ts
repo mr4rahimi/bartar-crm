@@ -40,6 +40,8 @@ export type TicketDto = {
   assignedToId: string | null;
   assignedToName: string | null;
   acceptedAt: Date | null;
+  unrepairableReason: string | null;
+  deliveredToCustomerAt: Date | null;
   createdByName: string;
   createdAt: Date;
   deletedAt: Date | null;
